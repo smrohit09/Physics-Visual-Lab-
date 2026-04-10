@@ -1,0 +1,2529 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projectile Motion</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #050a12;
+    --surface: #0a1628;
+    --surface2: #0f1f3d;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --accent3: #7fff00;
+    --text: #e0f0ff;
+    --muted: #4a6080;
+    --success: #00ff88;
+    --fail: #ff3366;
+    --glow: 0 0 20px rgba(0,229,255,0.4);
+    --glow2: 0 0 20px rgba(255,107,53,0.4);
+    --glow3: 0 0 20px rgba(127,255,0,0.4);
+  }
+ 
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+ 
+  body {
+    
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+ 
+  /* Starfield background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 60% 10%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,0.2) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 80%, rgba(255,255,255,0.35) 0%, transparent 100%),
+      radial-gradient(1px 1px at 90% 20%, rgba(255,255,255,0.25) 0%, transparent 100%),
+      radial-gradient(2px 2px at 10% 50%, rgba(0,229,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 90%, rgba(255,255,255,0.2) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+ 
+  /* ===== HEADER ===== */
+  header {
+    text-align: center;
+    padding: 20px 20px 10px;
+    position: relative;
+    z-index: 10;
+    border-bottom: 1px solid rgba(0,229,255,0.15);
+  }
+ 
+  .logo {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: 0.05em;
+    filter: drop-shadow(0 0 20px rgba(0,229,255,0.5));
+  }
+ 
+  .motto {
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.2em;
+    margin-top: 4px;
+    text-transform: uppercase;
+  }
+ 
+  /* ===== MAIN LAYOUT ===== */
+  .app {
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    grid-template-rows: auto 1fr;
+    gap: 0;
+    height: calc(100vh - 85px);
+    position: relative;
+    z-index: 5;
+  }
+ 
+  /* ===== SIDEBAR ===== */
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid rgba(0,229,255,0.1);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow-y: auto;
+  }
+ 
+  .panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.25em;
+    color: var(--accent);
+    text-transform: uppercase;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(0,229,255,0.2);
+  }
+ 
+  /* Level selector */
+  .level-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+  }
+ 
+  .level-btn {
+    background: var(--surface2);
+    border: 1px solid rgba(0,229,255,0.15);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 0.6rem;
+    padding: 8px 4px;
+    cursor: pointer;
+    border-radius: 4px;
+    text-align: center;
+    transition: all 0.2s;
+    line-height: 1.4;
+  }
+ 
+  .level-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .level-btn.active {
+    background: rgba(0,229,255,0.1);
+    border-color: var(--accent);
+    color: var(--accent);
+    box-shadow: var(--glow);
+  }
+  .level-btn.elevated {
+    border-color: rgba(127,255,0,0.3);
+    position: relative;
+  }
+  .level-btn.elevated::after {
+    content: '⬆';
+    position: absolute;
+    top: 3px;
+    right: 4px;
+    font-size: 0.5rem;
+    color: var(--accent3);
+  }
+  .level-btn.elevated.active { border-color: var(--accent3); color: var(--accent3); box-shadow: var(--glow3); }
+  .level-btn.elevated:hover { border-color: var(--accent3); color: var(--accent3); }
+  .level-btn .level-icon { font-size: 1rem; display: block; margin-bottom: 2px; }
+ 
+  /* Controls */
+  .control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+ 
+  .control-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.65rem;
+    color: var(--muted);
+  }
+ 
+  .control-value {
+    color: var(--accent);
+    font-weight: 700;
+  }
+ 
+  /* Numeric input fields */
+  .num-input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+ 
+  input[type=number] {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 36px;
+    background: var(--surface2);
+    border: 1px solid rgba(0,229,255,0.25);
+    border-radius: 4px;
+    color: var(--accent);
+    font-family: 'Orbitron', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    padding: 0 8px;
+  }
+ 
+  input[type=number]:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 10px rgba(0,229,255,0.3);
+  }
+ 
+  input[type=number].angle-input {
+    border-color: rgba(255,107,53,0.25);
+    color: var(--accent2);
+  }
+ 
+  input[type=number].angle-input:focus {
+    border-color: var(--accent2);
+    box-shadow: 0 0 10px rgba(255,107,53,0.3);
+  }
+ 
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+ 
+  .input-unit {
+    font-size: 0.6rem;
+    color: var(--muted);
+    white-space: nowrap;
+    min-width: 28px;
+    text-align: left;
+  }
+ 
+  .input-hint {
+    font-size: 0.55rem;
+    color: rgba(0,229,255,0.4);
+    text-align: right;
+  }
+ 
+  .input-error {
+    font-size: 0.55rem;
+    color: var(--fail);
+    min-height: 14px;
+  }
+ 
+  /* Target Info Panel */
+  .target-info-panel {
+    background: var(--surface2);
+    border: 1px solid rgba(255,107,53,0.2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+ 
+  .target-info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.62rem;
+  }
+ 
+  .target-info-label { color: var(--muted); }
+  .target-info-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent2);
+  }
+ 
+  .target-info-val.grav-val { color: var(--accent); }
+ 
+  /* Inline feedback pill */
+  .throw-feedback-pill {
+    display: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-align: center;
+    border: 1px solid;
+  }
+  .throw-feedback-pill.short { background: rgba(255,107,53,0.12); border-color: rgba(255,107,53,0.4); color: var(--accent2); }
+  .throw-feedback-pill.long  { background: rgba(0,229,255,0.08); border-color: rgba(0,229,255,0.3); color: var(--accent); }
+  .throw-feedback-pill.high  { background: rgba(127,255,0,0.08); border-color: rgba(127,255,0,0.3); color: var(--accent3); }
+  .throw-feedback-pill.low   { background: rgba(255,51,102,0.1); border-color: rgba(255,51,102,0.3); color: var(--fail); }
+  .throw-feedback-pill.hit   { background: rgba(0,255,136,0.1); border-color: rgba(0,255,136,0.4); color: var(--success); }
+  .throw-feedback-pill.visible { display: block; }
+ 
+  /* Gravity display */
+  .gravity-display {
+    background: var(--surface2);
+    border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 6px;
+    padding: 12px;
+    text-align: center;
+  }
+ 
+  .gravity-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.6rem;
+    color: var(--accent);
+    font-weight: 700;
+    line-height: 1;
+  }
+ 
+  .gravity-unit {
+    font-size: 0.55rem;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+ 
+  .gravity-name {
+    font-size: 0.7rem;
+    color: var(--text);
+    margin-top: 4px;
+    font-weight: 700;
+  }
+ 
+  /* Custom gravity */
+  .custom-gravity-section { display: none; }
+  .custom-gravity-section.visible { display: block; }
+ 
+  /* Action buttons */
+  .btn {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    padding: 10px 16px;
+    border: none;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    width: 100%;
+  }
+ 
+  .btn-throw {
+    background: linear-gradient(135deg, var(--accent), #0080ff);
+    color: var(--bg);
+    font-weight: 700;
+    box-shadow: var(--glow);
+  }
+  .btn-throw:hover { filter: brightness(1.2); transform: translateY(-1px); }
+  .btn-throw:active { transform: translateY(0); }
+  .btn-throw:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+ 
+  .btn-reset {
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .btn-reset:hover { color: var(--text); border-color: var(--text); }
+ 
+  /* ===== GHOST TRAJECTORY TOGGLE ===== */
+  /* 
+     PLACEMENT DECISION:
+     Positioned inside .sidebar, inside a dedicated .ghost-toggle-wrap div,
+     placed BETWEEN the Shot Controls section and the action buttons (Shoot/Reset).
+     This groups it logically with inputs (user changes angle/velocity → sees
+     the toggle immediately below → understands it relates to those inputs).
+  */
+  .ghost-toggle-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+ 
+  .ghost-toggle-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 9px 12px;
+    background: var(--surface2);
+    border: 1px solid rgba(0,229,255,0.18);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.22s;
+    gap: 10px;
+    position: relative;
+    overflow: hidden;
+  }
+ 
+  /* Shimmer sweep on hover */
+  .ghost-toggle-btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(0,229,255,0.06), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.4s;
+  }
+  .ghost-toggle-btn:hover::before { transform: translateX(100%); }
+ 
+  .ghost-toggle-btn:hover {
+    border-color: rgba(0,229,255,0.4);
+    box-shadow: 0 0 12px rgba(0,229,255,0.12);
+  }
+ 
+  /* When ghost is ON, the button border glows cyan */
+  .ghost-toggle-btn.ghost-on {
+    border-color: var(--accent);
+    box-shadow: 0 0 14px rgba(0,229,255,0.22);
+    background: rgba(0,229,255,0.05);
+  }
+ 
+  .ghost-toggle-left {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+ 
+  .ghost-toggle-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    transition: color 0.2s;
+  }
+ 
+  .ghost-toggle-btn.ghost-on .ghost-toggle-label { color: var(--accent); }
+ 
+  .ghost-toggle-sublabel {
+    font-size: 0.5rem;
+    color: rgba(74,96,128,0.7);
+    letter-spacing: 0.06em;
+    transition: color 0.2s;
+  }
+ 
+  .ghost-toggle-btn.ghost-on .ghost-toggle-sublabel {
+    color: rgba(0,229,255,0.5);
+  }
+ 
+  /* Custom pill-style toggle switch */
+  .ghost-switch {
+    flex-shrink: 0;
+    width: 38px;
+    height: 20px;
+    background: var(--surface);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 20px;
+    position: relative;
+    transition: all 0.22s;
+  }
+ 
+  .ghost-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+ 
+  .ghost-toggle-btn.ghost-on .ghost-switch {
+    background: rgba(0,229,255,0.15);
+    border-color: var(--accent);
+    box-shadow: 0 0 8px rgba(0,229,255,0.35);
+  }
+ 
+  .ghost-toggle-btn.ghost-on .ghost-switch::after {
+    left: 20px;
+    background: var(--accent);
+    box-shadow: 0 0 6px rgba(0,229,255,0.8);
+  }
+ 
+  /* Live formula preview strip */
+  /* .live-formula-strip {
+    background: rgba(0,229,255,0.03);
+    border: 1px solid rgba(0,229,255,0.1);
+    border-radius: 5px;
+    padding: 7px 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  } */
+ 
+  .lf-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.56rem;
+  }
+ 
+  .lf-label {
+    color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+ 
+  .lf-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--accent3);
+    transition: color 0.15s;
+  }
+ 
+  .lf-val.accent { color: var(--accent); }
+  .lf-val.orange { color: var(--accent2); }
+ 
+  /* Stats */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+ 
+  .stat-box {
+    background: var(--surface2);
+    border: 1px solid rgba(0,229,255,0.1);
+    border-radius: 4px;
+    padding: 8px;
+    text-align: center;
+  }
+ 
+  .stat-val {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.85rem;
+    color: var(--accent3);
+    font-weight: 700;
+  }
+ 
+  .stat-lbl {
+    font-size: 0.5rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+ 
+  /* ===== CANVAS AREA ===== */
+  .canvas-area {
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+  }
+ 
+  /* Objective bar */
+  .objective-bar {
+    background: rgba(0,229,255,0.05);
+    border-bottom: 1px solid rgba(0,229,255,0.1);
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 0.65rem;
+  }
+ 
+  .obj-label {
+    color: var(--accent);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+  }
+ 
+  .obj-text { color: var(--text); flex: 1; }
+ 
+  .attempts-badge {
+    background: var(--surface2);
+    border: 1px solid rgba(255,107,53,0.3);
+    color: var(--accent2);
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 0.6rem;
+    white-space: nowrap;
+  }
+ 
+  canvas {
+    flex: 1;
+    display: block;
+    background: transparent;
+    cursor: crosshair;
+  }
+ 
+  /* ===== FEEDBACK OVERLAY ===== */
+  .feedback-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(5,10,18,0.85);
+    z-index: 50;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    backdrop-filter: blur(4px);
+  }
+ 
+  .feedback-overlay.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+ 
+  .feedback-card {
+    background: var(--surface);
+    border: 1px solid rgba(0,229,255,0.2);
+    border-radius: 12px;
+    padding: 32px;
+    max-width: 480px;
+    width: 90%;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 0 60px rgba(0,229,255,0.1);
+  }
+ 
+  .feedback-card.success { border-color: var(--success); box-shadow: 0 0 60px rgba(0,255,136,0.1); }
+  .feedback-card.fail { border-color: var(--fail); box-shadow: 0 0 60px rgba(255,51,102,0.1); }
+ 
+  .feedback-icon { font-size: 3rem; margin-bottom: 12px; }
+ 
+  .feedback-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 1.4rem;
+    font-weight: 900;
+    margin-bottom: 8px;
+  }
+  .success .feedback-title { color: var(--success); }
+  .fail .feedback-title { color: var(--fail); }
+ 
+  .feedback-msg { font-size: 0.7rem; color: var(--muted); line-height: 1.6; margin-bottom: 16px; }
+ 
+  .physics-fact {
+    background: rgba(0,229,255,0.05);
+    border: 1px solid rgba(0,229,255,0.15);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 0.65rem;
+    color: var(--accent);
+    margin-bottom: 16px;
+    line-height: 1.6;
+    text-align: left;
+  }
+ 
+  .physics-fact strong { color: var(--text); }
+ 
+  .feedback-btns { display: flex; gap: 8px; }
+ 
+  .btn-sm {
+    flex: 1;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.6rem;
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+  }
+ 
+  .btn-retry {
+    background: rgba(255,51,102,0.15);
+    color: var(--fail);
+    border: 1px solid rgba(255,51,102,0.3);
+  }
+  .btn-retry:hover { background: rgba(255,51,102,0.25); }
+ 
+  .btn-next {
+    background: linear-gradient(135deg, var(--success), #00cc66);
+    color: var(--bg);
+    font-weight: 700;
+  }
+  .btn-next:hover { filter: brightness(1.15); }
+ 
+  /* ===== TRAJECTORY INFO ===== */
+  .trajectory-info {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 0.55rem;
+    color: var(--muted);
+    background: rgba(5,10,18,0.7);
+    padding: 4px 10px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,229,255,0.1);
+    pointer-events: none;
+  }
+ 
+  /* Intro screen */
+  .intro-screen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+    text-align: center;
+    padding: 20px;
+    transition: opacity 0.5s;
+  }
+ 
+  .intro-screen.hidden { opacity: 0; pointer-events: none; }
+ 
+  .intro-logo {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(2rem, 6vw, 4rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent), var(--accent2), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 30px rgba(0,229,255,0.5));
+    animation: pulse 2s ease-in-out infinite;
+  }
+ 
+  @keyframes pulse {
+    0%, 100% { filter: drop-shadow(0 0 20px rgba(0,229,255,0.4)); }
+    50% { filter: drop-shadow(0 0 40px rgba(0,229,255,0.8)); }
+  }
+ 
+  .intro-subtitle {
+    font-size: 0.75rem;
+    color: var(--muted);
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+  }
+ 
+  .intro-desc {
+    max-width: 500px;
+    font-size: 0.8rem;
+    color: var(--text);
+    line-height: 2;
+    opacity: 0.8;
+  }
+ 
+  .intro-formula {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.75rem;
+    color: var(--accent);
+    background: var(--surface);
+    border: 1px solid rgba(0,229,255,0.2);
+    padding: 12px 24px;
+    border-radius: 8px;
+    letter-spacing: 0.05em;
+  }
+ 
+  .btn-start {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    padding: 16px 48px;
+    background: linear-gradient(135deg, var(--accent), #0080ff);
+    color: var(--bg);
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    box-shadow: var(--glow);
+    transition: all 0.2s;
+    animation: bounce 1s ease-in-out infinite alternate;
+  }
+ 
+  @keyframes bounce {
+    from { transform: translateY(0); box-shadow: 0 0 20px rgba(0,229,255,0.4); }
+    to { transform: translateY(-4px); box-shadow: 0 0 40px rgba(0,229,255,0.7); }
+  }
+ 
+  .btn-start:hover { filter: brightness(1.15); }
+ 
+  /* Particles for success */
+  .particle {
+    position: absolute;
+    pointer-events: none;
+    border-radius: 50%;
+    animation: particle-fly 1s ease-out forwards;
+  }
+ 
+  @keyframes particle-fly {
+    from { opacity: 1; transform: translate(0, 0) scale(1); }
+    to { opacity: 0; transform: translate(var(--dx), var(--dy)) scale(0); }
+  }
+ 
+  /* Responsive — handled by the full responsive block below */
+ 
+  /* ============================================================
+     FLASHCARD START — CSS
+     ============================================================ */
+  #fc-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    background: rgba(3, 7, 16, 0.96);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 1;
+    transition: opacity 0.45s ease;
+    overflow-y: auto;
+  }
+  #fc-overlay.fc-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+  #fc-card {
+    background: var(--surface);
+    border: 1px solid rgba(0, 229, 255, 0.22);
+    border-radius: 16px;
+    padding: 36px 40px 32px;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: 0 0 60px rgba(0, 229, 255, 0.1), 0 0 120px rgba(0, 229, 255, 0.04);
+    animation: fc-rise 0.5s ease both;
+  }
+  @keyframes fc-rise {
+    from { opacity: 0; transform: translateY(22px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  #fc-card .fc-badge {
+    display: inline-block;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.52rem;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    border-radius: 20px;
+    padding: 3px 12px;
+    margin-bottom: 14px;
+  }
+  #fc-card .fc-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(1.4rem, 4vw, 2rem);
+    font-weight: 900;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    filter: drop-shadow(0 0 16px rgba(0, 229, 255, 0.4));
+    margin-bottom: 22px;
+    line-height: 1.2;
+  }
+  #fc-card .fc-divider {
+    height: 1px;
+    background: linear-gradient(90deg, rgba(0,229,255,0.3), transparent);
+    margin: 14px 0;
+  }
+  #fc-card .fc-section-label {
+    font-family: 'Orbitron', monospace;
+    font-size: 0.58rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 8px;
+    margin-top: 16px;
+  }
+  #fc-card .fc-body {
+    font-size: 0.78rem;
+    color: var(--text);
+    line-height: 1.9;
+    opacity: 0.9;
+  }
+  #fc-card .fc-body strong {
+    color: var(--accent);
+  }
+  #fc-card .fc-list {
+    list-style: none;
+    padding: 0;
+    margin: 6px 0 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+  #fc-card .fc-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.75rem;
+    color: var(--text);
+    opacity: 0.88;
+    line-height: 1.6;
+  }
+  #fc-card .fc-list li::before {
+    content: '▸';
+    color: var(--accent);
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 0.65rem;
+  }
+  #fc-card .fc-insight-box {
+    background: rgba(0, 229, 255, 0.04);
+    border: 1px solid rgba(0, 229, 255, 0.14);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+    padding: 12px 14px;
+    margin-top: 8px;
+    font-size: 0.72rem;
+    color: var(--text);
+    line-height: 1.75;
+    opacity: 0.9;
+  }
+  #fc-card .fc-insight-box .fc-insight-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    margin-bottom: 3px;
+  }
+  #fc-card .fc-insight-box .fc-insight-row:last-child { margin-bottom: 0; }
+  #fc-card .fc-insight-box .fc-dot {
+    color: var(--accent3);
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    margin-top: 2px;
+  }
+  #fc-card .fc-action-line {
+    margin-top: 20px;
+    padding: 13px 16px;
+    background: rgba(127, 255, 0, 0.05);
+    border: 1px solid rgba(127, 255, 0, 0.2);
+    border-radius: 8px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--accent3);
+    letter-spacing: 0.06em;
+    text-align: center;
+  }
+  #fc-start-btn {
+    display: block;
+    width: 100%;
+    margin-top: 24px;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, var(--accent), #0070ff);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 0 24px rgba(0, 229, 255, 0.35);
+    transition: filter 0.2s, transform 0.2s;
+  }
+  #fc-start-btn:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+  }
+  #fc-start-btn:active { transform: translateY(0); }
+  /* "View Concept" reopen button inside sidebar */
+  #fc-reopen-btn {
+    display: block;
+    width: 100%;
+    font-family: 'Orbitron', monospace;
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 9px 12px;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid rgba(0, 229, 255, 0.14);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  #fc-reopen-btn:hover {
+    color: var(--accent);
+    border-color: rgba(0, 229, 255, 0.4);
+    box-shadow: 0 0 10px rgba(0, 229, 255, 0.1);
+  }
+  /* ============================================================
+     FLASHCARD END — CSS
+     ============================================================ */
+ 
+  /* ============================================================
+     Responsive changes start
+     ============================================================ */
+ 
+  /* ── Sticky action bar — hidden on desktop, shown only on mobile ── */
+  .mobile-action-bar { display: none; }
+ 
+  /* ── Tablet: 1024px and below ── */
+  @media (max-width: 1024px) {
+    .app { grid-template-columns: 220px 1fr; }
+    .sidebar { padding: 12px; gap: 12px; }
+    .gravity-val { font-size: 1.3rem; }
+    .level-btn { font-size: 0.55rem; padding: 6px 3px; }
+    .btn { padding: 11px 12px; font-size: 0.6rem; }
+    .stat-val { font-size: 0.75rem; }
+    .objective-bar { padding: 6px 14px; font-size: 0.6rem; gap: 10px; }
+  }
+ 
+  /* ── Mobile: 768px and below ── */
+  @media (max-width: 768px) {
+ 
+    /* Lock page scroll — layout is viewport-contained */
+    html, body { height: 100%; overflow: hidden; }
+ 
+    /* Compact header */
+    header { padding: 10px 14px 8px; }
+    .logo { font-size: clamp(1rem, 4.5vw, 1.4rem); }
+    .motto { font-size: 0.55rem; letter-spacing: 0.1em; }
+ 
+    /* App: flex column filling remaining viewport height */
+    .app {
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 58px);
+      overflow: hidden;
+    }
+ 
+    /* Canvas area: top ~45% — always visible */
+    .canvas-area {
+      order: 1;
+      flex: 0 0 44%;
+      min-height: 210px;
+      max-height: 320px;
+      position: relative;
+      overflow: hidden;
+    }
+    canvas { min-height: unset; }
+ 
+    /* Objective bar: single compact line */
+    .objective-bar {
+      padding: 5px 10px;
+      font-size: 0.57rem;
+      gap: 8px;
+      flex-wrap: nowrap;
+    }
+    .obj-text {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .attempts-badge { font-size: 0.5rem; padding: 2px 7px; flex-shrink: 0; }
+    .trajectory-info { font-size: 0.47rem; padding: 3px 7px; }
+ 
+    /* Sidebar: scrollable middle strip */
+    .sidebar {
+      order: 2;
+      flex: 1 1 0;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      border-right: none;
+      border-top: 1px solid rgba(0,229,255,0.1);
+      padding: 12px 14px;
+      /* bottom padding so content clears the sticky bar */
+      padding-bottom: 76px;
+      gap: 10px;
+      display: flex;
+      flex-direction: column;
+    }
+ 
+    /* Hide original inline action buttons — replaced by sticky bar */
+    .sidebar .mobile-hide-btns { display: none !important; }
+ 
+    /* Sticky shoot/reset bar — always visible at viewport bottom */
+    .mobile-action-bar {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      z-index: 99;
+      gap: 8px;
+      padding: 10px 14px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      background: linear-gradient(to top, rgba(5,10,18,0.98) 65%, transparent);
+      border-top: 1px solid rgba(0,229,255,0.12);
+    }
+    .mobile-action-bar .btn {
+      flex: 1;
+      min-height: 46px;
+      font-size: 0.66rem;
+      padding: 12px 8px;
+    }
+    .mobile-action-bar .btn-throw {
+      flex: 2;
+      min-height: 48px;
+      font-size: 0.7rem;
+    }
+ 
+    /* Sidebar content: compact */
+    .level-grid { grid-template-columns: repeat(4, 1fr); }
+    .level-btn { min-height: 42px; padding: 7px 3px; font-size: 0.52rem; }
+    input[type=number] { height: 42px; font-size: 0.92rem; }
+    .ghost-toggle-btn { min-height: 42px; padding: 9px 12px; }
+    .stats-grid { grid-template-columns: repeat(4, 1fr); }
+    .stat-box { overflow: hidden; }
+    .stat-val { font-size: 0.66rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .stat-lbl { font-size: 0.42rem; }
+    .gravity-display { padding: 8px 10px; }
+    .gravity-val { font-size: 1.1rem; }
+    .gravity-unit { font-size: 0.48rem; }
+    .gravity-name { font-size: 0.58rem; }
+    .target-info-panel { padding: 7px 10px; }
+    .target-info-row { font-size: 0.54rem; }
+    .target-info-val { font-size: 0.63rem; }
+    .panel-title { font-size: 0.54rem; }
+    .control-label { flex-wrap: wrap; gap: 2px; }
+    .input-hint { font-size: 0.48rem; }
+    .control-group { gap: 4px; }
+    #fc-reopen-btn { min-height: 42px; font-size: 0.54rem; }
+    #fc-card { padding: 22px 18px 18px; }
+    .feedback-card { padding: 18px 14px; }
+    .feedback-title { font-size: 1.1rem; }
+    .feedback-icon { font-size: 2.4rem; margin-bottom: 8px; }
+    .feedback-msg { font-size: 0.63rem; }
+    .physics-fact { font-size: 0.58rem; }
+  }
+ 
+  /* ── Small mobile: 480px and below ── */
+  @media (max-width: 480px) {
+    .app { height: calc(100vh - 50px); }
+    .canvas-area { flex: 0 0 42%; min-height: 195px; }
+    .logo { font-size: clamp(0.95rem, 4vw, 1.2rem); }
+    .motto { display: none; }
+    .level-btn { font-size: 0.46rem; min-height: 40px; }
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+    .mobile-action-bar { padding: 8px 10px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); }
+    .mobile-action-bar .btn { font-size: 0.6rem; min-height: 44px; }
+    #fc-card .fc-title { font-size: clamp(1.1rem, 5vw, 1.5rem); }
+    #fc-card .fc-body { font-size: 0.7rem; }
+    #fc-card .fc-list li { font-size: 0.65rem; }
+    #fc-start-btn { font-size: 0.7rem; padding: 12px 18px; }
+  }
+ 
+  /* ============================================================
+     Responsive changes end
+     ============================================================ */
+</style>
+</head>
+<body>
+ 
+<!-- ============================================================
+     FLASHCARD START — HTML
+     ============================================================ -->
+<div id="fc-overlay">
+  <div id="fc-card">
+ 
+    <div class="fc-badge">📐 Concept Card</div>
+    <div class="fc-title">Projectile Motion</div>
+ 
+    <p class="fc-body">
+      A projectile moves in <strong>two directions</strong> at the same time:
+    </p>
+    <ul class="fc-list" style="margin-top:10px;">
+      <li><strong>Horizontal</strong> → constant speed</li>
+      <li><strong>Vertical</strong> → affected by gravity</li>
+    </ul>
+ 
+    <div class="fc-divider"></div>
+ 
+    <div class="fc-section-label">Key Idea</div>
+    <p class="fc-body">These two motions are <strong>independent</strong>.</p>
+    <ul class="fc-list" style="margin-top:8px;">
+      <li>Gravity does <strong>NOT</strong> affect horizontal motion</li>
+      <li>Horizontal motion does <strong>NOT</strong> affect falling</li>
+    </ul>
+ 
+    <div class="fc-divider"></div>
+ 
+    <div class="fc-section-label">Path</div>
+    <p class="fc-body">
+      The motion forms a curved path — a <strong>parabola</strong>.
+    </p>
+ 
+    <div class="fc-section-label" style="margin-top:16px;">Controls</div>
+    <ul class="fc-list">
+      <li><strong>Velocity</strong> → how far it goes</li>
+      <li><strong>Angle</strong> → shape of path</li>
+      <li><strong>Gravity</strong> → how fast it falls</li>
+    </ul>
+ 
+    <div class="fc-divider"></div>
+ 
+    <div class="fc-section-label">Insight — at the same speed:</div>
+    <div class="fc-insight-box">
+      <div class="fc-insight-row"><span class="fc-dot">◆</span><span>Low angle → longer path</span></div>
+      <div class="fc-insight-row"><span class="fc-dot">◆</span><span>High angle → higher arc</span></div>
+      <div class="fc-insight-row"><span class="fc-dot">◆</span><span><strong>45° → maximum range</strong> (flat ground)</span></div>
+    </div>
+ 
+    <div class="fc-action-line">
+      🎯 Try predicting the shot before launching.
+    </div>
+ 
+    <button id="fc-start-btn" onclick="fcStartLab()">▶ Start Lab</button>
+ 
+  </div>
+</div>
+<!-- ============================================================
+     FLASHCARD END — HTML
+     ============================================================ -->
+ 
+<!-- INTRO SCREEN -->
+<div class="intro-screen" id="introScreen">
+  <div class="intro-logo">Projectile Motion Lab </div>
+  <div class="intro-subtitle">Master Projectile Motion · Score the Perfect Shot</div>
+  <div class="intro-desc">
+    Shoot a basketball into the hoop using real physics.<br>
+    Calculate the right <strong>angle</strong> and <strong>velocity</strong> to score.<br>
+    Discover how gravity shapes every arc on the court.
+  </div>
+  <div class="intro-formula">
+    x = v·cos(θ)·t &nbsp;|&nbsp; y = <strong>h</strong> + v·sin(θ)·t − ½g·t²
+  </div>
+  <button class="btn-start" onclick="startGame()">SHOOT FOR IT →</button>
+</div>
+ 
+<!-- HEADER -->
+<header>
+  <div class="logo">Projectile Motion Lab</div>
+  <div class="motto">Score the Perfect Shot · Learn Projectile Motion</div>
+</header>
+ 
+<!-- MAIN APP -->
+<div class="app">
+ 
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+ 
+    <!-- Level Select -->
+    <div>
+      <div class="panel-title">Mission Select</div>
+      <div class="level-grid" id="levelGrid"></div>
+    </div>
+ 
+    <!-- Gravity Display -->
+    <div>
+      <div class="panel-title">Gravity Field</div>
+      <div class="gravity-display">
+        <div class="gravity-val" id="gravVal">9.8</div>
+        <div class="gravity-unit">m/s²</div>
+        <div class="gravity-name" id="gravName">🌍 Earth</div>
+      </div>
+    </div>
+ 
+    <!-- Custom Gravity -->
+    <div class="custom-gravity-section" id="customGravSection">
+      <div class="panel-title">Custom Gravity</div>
+      <div class="control-group">
+        <div class="control-label"><span>Gravity (m/s²)</span></div>
+        <div class="num-input-wrap">
+          <input type="number" min="0.1" max="50" step="0.1" value="9.8" id="customGravInput">
+          <span class="input-unit">m/s²</span>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- Target Info -->
+    <div>
+      <div class="panel-title">Target Info</div>
+      <div class="target-info-panel">
+        <div class="target-info-row" id="launchHRow">
+          <span class="target-info-label">Launch Height</span>
+          <span class="target-info-val" id="infoLaunchH" style="color:var(--accent3)">—</span>
+        </div>
+        <div class="target-info-row">
+          <span class="target-info-label">Horizontal Distance</span>
+          <span class="target-info-val" id="infoDistance">—</span>
+        </div>
+        <div class="target-info-row">
+          <span class="target-info-label">Target Height</span>
+          <span class="target-info-val" id="infoHeight">—</span>
+        </div>
+        <div class="target-info-row">
+          <span class="target-info-label">Gravity</span>
+          <span class="target-info-val grav-val" id="infoGravity">—</span>
+        </div>
+      </div>
+    </div>
+ 
+    <!-- Shot Controls -->
+    <div>
+      <div class="panel-title">Shot Controls</div>
+      <div class="control-group">
+        <div class="control-label">
+          <span>Initial Velocity</span>
+          <span class="input-hint">v₀ (m/s)</span>
+        </div>
+        <div class="num-input-wrap">
+          <input type="number" min="1" max="200" step="0.5" value="30" id="velocityInput" placeholder="m/s">
+          <span class="input-unit">m/s</span>
+        </div>
+        <div class="input-error" id="velocityError"></div>
+      </div>
+      <br>
+      <div class="control-group">
+        <div class="control-label">
+          <span>Launch Angle</span>
+          <span class="input-hint">θ (degrees)</span>
+        </div>
+        <div class="num-input-wrap">
+          <input type="number" min="1" max="89" step="0.5" value="45" id="angleInput" class="angle-input" placeholder="°">
+          <span class="input-unit">deg</span>
+        </div>
+        <div class="input-error" id="angleError"></div>
+      </div>
+    </div>
+ 
+    <!-- ═══════════════════════════════════════════════════
+         GHOST TRAJECTORY TOGGLE
+         Placed between Shot Controls and Throw button:
+         • User adjusts velocity/angle above
+         • Sees toggle immediately — logical grouping
+         • Ghost updates live as inputs change
+         ═══════════════════════════════════════════════════ -->
+    <div class="ghost-toggle-wrap">
+      <div class="panel-title">Visualization</div>
+ 
+      <!-- Toggle button — entire div is clickable -->
+      <button class="ghost-toggle-btn ghost-on" id="ghostToggleBtn" onclick="toggleGhost()" type="button">
+        <div class="ghost-toggle-left">
+          <span class="ghost-toggle-label">Ghost Trajectory</span>
+          <span class="ghost-toggle-sublabel" id="ghostSubLabel">Preview arc before shooting</span>
+        </div>
+        <div class="ghost-switch" id="ghostSwitch"></div>
+      </button>
+ 
+      <!-- Live formula preview strip — updates as inputs change -->
+      <div class="live-formula-strip" id="liveFormulaStrip">
+        <div class="lf-row">
+          <span class="lf-label">vₓ = v·cos(θ)</span>
+          <span class="lf-val accent" id="lfVx">—</span>
+        </div>
+        <div class="lf-row">
+          <span class="lf-label">vy = v·sin(θ)</span>
+          <span class="lf-val orange" id="lfVy">—</span>
+        </div>
+       
+       
+      </div>
+    </div>
+ 
+    
+ 
+    <!-- Throw Feedback Pill -->
+    <div class="throw-feedback-pill" id="throwFeedbackPill"></div>
+ 
+    <!-- Action Buttons (desktop) — hidden on mobile, replaced by sticky bar -->
+    <div class="mobile-hide-btns" style="display:flex;flex-direction:column;gap:8px;">
+      <button class="btn btn-throw" id="throwBtn" onclick="throwBall()">🏀 SHOOT</button>
+      <button class="btn btn-reset" onclick="resetBall()">↺ RESET</button>
+      <!-- FLASHCARD START — View Concept button -->
+      <button id="fc-reopen-btn" onclick="fcShowCard()">📐 View Concept</button>
+      <!-- FLASHCARD END — View Concept button -->
+    </div>
+ 
+    <!-- Stats -->
+    <div>
+      <div class="panel-title">Flight Data</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val" id="statRange">—</div>
+          <div class="stat-lbl">Range (m)</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statHeight">—</div>
+          <div class="stat-lbl">Max Height</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statTime">—</div>
+          <div class="stat-lbl">Flight Time</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val" id="statVelo">—</div>
+          <div class="stat-lbl">Init. Vel.</div>
+        </div>
+      </div>
+    </div>
+ 
+  </div>
+ 
+  <!-- CANVAS AREA -->
+  <div class="canvas-area">
+    <div class="objective-bar">
+      <span class="obj-label">OBJECTIVE:</span>
+      <span class="obj-text" id="objText">Hit the target to complete the mission.</span>
+      <span class="attempts-badge" id="attemptsBadge">SHOTS: 0</span>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div class="trajectory-info" id="trajectoryInfo">Enter velocity &amp; angle, then SHOOT to see the arc</div>
+ 
+    <!-- Feedback Overlay -->
+    <div class="feedback-overlay" id="feedbackOverlay">
+      <div class="feedback-card" id="feedbackCard">
+        <div class="feedback-icon" id="feedbackIcon"></div>
+        <div class="feedback-title" id="feedbackTitle"></div>
+        <div class="feedback-msg" id="feedbackMsg"></div>
+        <div class="physics-fact" id="physicsFact"></div>
+        <div class="feedback-btns">
+          <button class="btn-sm btn-retry" onclick="closeFeedback()">↺ RETRY</button>
+          <button class="btn-sm btn-next" id="nextBtn" onclick="nextLevel()">NEXT LEVEL →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+</div>
+ 
+<script>
+// ============================================================
+// GAME DATA
+// ============================================================
+const LEVELS = [
+  {
+    id: 1, name: 'Earth', icon: '🌍',
+    gravity: 9.8,
+    launchHeight: 0,
+    targetDist: 0.45,
+    targetY: 0,
+    radius: 28,
+    objective: 'Earth gravity (g = 9.8 m/s²). Launch height = 0 m. Hit the ground target.',
+    successFact: '🌍 <strong>Earth\'s gravity</strong> is 9.8 m/s². At 45° you achieve maximum range. The parabolic trajectory results from constant gravitational acceleration acting downward.',
+    failFact: '💡 Hint: For a ground target, use Range = v²·sin(2θ)/g. Try θ = 45° for maximum range, then adjust velocity accordingly.',
+  },
+  {
+    id: 2, name: 'Moon', icon: '🌑',
+    gravity: 1.62,
+    launchHeight: 0,
+    targetDist: 0.62,
+    targetY: 0,
+    radius: 28,
+    objective: 'Moon gravity (g = 1.62 m/s²). Launch height = 0 m. Much weaker pull — the ball travels FAR. Recalculate!',
+    successFact: '🌑 <strong>Moon\'s gravity</strong> is 1/6 of Earth\'s. Lower g means longer flight time, so the same launch sends the ball ~6× farther!',
+    failFact: '💡 Hint: Lower gravity → longer flight → farther range. Use Range = v²·sin(2θ)/g with g = 1.62 to find the right velocity.',
+  },
+  {
+    id: 3, name: 'Mars', icon: '🔴',
+    gravity: 3.72,
+    launchHeight: 0,
+    targetDist: 0.50,
+    targetY: 15,
+    radius: 26,
+    objective: 'Mars gravity (g = 3.72 m/s²). Launch height = 0 m. Target is 15 m high — hit it mid-air!',
+    successFact: '🔴 <strong>Mars gravity</strong> (3.72 m/s²) is 38% of Earth\'s. Hitting a mid-air target requires solving for both x and y simultaneously — real rocket science!',
+    failFact: '💡 Hint: For a mid-air target at height h, solve: h = v·sin(θ)·t − ½g·t² and x = v·cos(θ)·t simultaneously.',
+  },
+  {
+    id: 4, name: 'Heavy Planet', icon: '🪐',
+    gravity: 24.8,
+    launchHeight: 0,
+    targetDist: 0.33,
+    targetY: 20,
+    radius: 26,
+    objective: 'Jupiter gravity (g = 24.8 m/s²)! Launch height = 0 m. Target floats 20 m high. Steep angle + high velocity!',
+    successFact: '🪐 <strong>Jupiter-like gravity</strong> (24.8 m/s²) is 2.5× Earth\'s. High g crushes flight time — you must launch harder and steeper to reach elevated targets.',
+    failFact: '💡 Hint: High gravity means the ball drops fast. Aim steep (60–75°) with high velocity to reach the elevated target before gravity pulls it down.',
+  },
+  {
+    id: 5, name: 'Custom', icon: '⚗️',
+    gravity: 9.8,
+    launchHeight: 0,
+    targetDist: 0.50,
+    targetY: 10,
+    radius: 26,
+    objective: 'Custom gravity mode! Launch height = 0 m. Target is 10 m above ground. Experiment and calculate!',
+    successFact: '⚗️ <strong>Experiment complete!</strong> You can now see how changing g reshapes the entire parabola — lower g = wider arc, higher g = tighter drop.',
+    failFact: '💡 Adjust the custom gravity value and recalculate. Remember: t_land = 2v·sin(θ)/g and range changes with 1/g.',
+  },
+  {
+    id: 6, name: 'Rooftop', icon: '🏢',
+    gravity: 9.8,
+    launchHeight: 100,
+    targetDist: 0.55,
+    targetY: 0,
+    radius: 22,
+    objective: 'ADVANCED: Launch from 100 m building on Earth! y = h + v·sin(θ)·t − ½g·t². Target is on the ground.',
+    successFact: '🏢 <strong>Elevated launch</strong> changes everything! With h = 100 m, the ball has extra height to gain horizontal range. Time of flight is longer: solve 0 = 100 + v·sin(θ)·t − ½g·t² for t.',
+    failFact: '💡 Hint: y(t) = 100 + v·sin(θ)·t − ½·9.8·t². Set y = 0 and solve for t (use quadratic formula). Then x = v·cos(θ)·t gives the range.',
+  },
+  {
+    id: 7, name: 'Sky Strike', icon: '🌤️',
+    gravity: 3.72,
+    launchHeight: 100,
+    targetDist: 0.60,
+    targetY: 30,
+    radius: 20,
+    objective: 'ADVANCED: 100 m building on Mars (g = 3.72)! Target floats 30 m above ground. Solve for x and y together.',
+    successFact: '🌤️ <strong>Sky strike!</strong> You launched from 100 m and hit a floating target at 30 m. With h₀ = 100 and h_target = 30, the net height drop is 70 m during flight.',
+    failFact: '💡 Hint: y(t) = 100 + v·sin(θ)·t − ½·3.72·t² = 30. Rearrange: v·sin(θ)·t − 1.86t² = −70. Also x = v·cos(θ)·t = target distance.',
+  },
+  {
+    id: 8, name: 'Apex Shot', icon: '🎯',
+    gravity: 12.0,
+    launchHeight: 100,
+    targetDist: 0.40,
+    targetY: 50,
+    radius: 18,
+    objective: 'EXPERT: 100 m building, g = 12 m/s². Hit target floating at 50 m above ground. Smallest target yet!',
+    successFact: '🎯 <strong>Expert cleared!</strong> Launching from 100 m and hitting a 50 m target means the ball only falls 50 m net. With high g, you need precise angle to time the arc correctly.',
+    failFact: '💡 Hint: y(t) = 100 + v·sin(θ)·t − 6t² = 50, so v·sin(θ)·t − 6t² = −50. And x = v·cos(θ)·t = target distance. Solve simultaneously.',
+  },
+];
+ 
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  currentLevel: 0,
+  completedLevels: JSON.parse(localStorage.getItem('gtl_completed') || '[]'),
+  attempts: 0,
+  isAnimating: false,
+  ball: null,
+  gravity: 9.8,
+  velocity: 30,
+  angle: 45,
+  lastThrowPoints: null,
+  // ── GHOST TRAJECTORY STATE ──
+  ghostEnabled: true,          // ON by default for first-time wow effect
+  ghostPoints: null,           // cached ghost path points
+  ghostDirty: true,            // needs recalculation
+};
+ 
+// ============================================================
+// CANVAS SETUP
+// ============================================================
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+ 
+/* Responsive changes start — canvas resize */
+function resizeCanvas() {
+  const area = canvas.parentElement;
+  const objBar = area.querySelector('.objective-bar');
+  const objBarH = objBar ? objBar.offsetHeight : 40;
+  canvas.width  = area.clientWidth;
+  // On mobile the canvas-area has a fixed height set via CSS (vw-based).
+  // Use the actual rendered height of the container minus the objective bar.
+  canvas.height = Math.max(area.clientHeight - objBarH, 200);
+}
+/* Responsive changes end — canvas resize */
+ 
+window.addEventListener('resize', () => {
+  resizeCanvas();
+  state.ghostDirty = true;
+  updateTargetInfoPanel();
+  drawScene();
+});
+ 
+// ============================================================
+// PHYSICS (SCALE: 1 pixel = 0.5 meters)
+// ============================================================
+const SCALE = 0.5;
+const GROUND_OFFSET = 60;
+const BUILDING_WIDTH = 60;
+ 
+function getGroundY()        { return canvas.height - GROUND_OFFSET; }
+function getCharX()          { return 80; }
+function getLaunchHeightPx() { return (LEVELS[state.currentLevel].launchHeight || 0) / SCALE; }
+function getLaunchY()        { return getGroundY() - getLaunchHeightPx(); }
+ 
+function getTargetX() {
+  const level = LEVELS[state.currentLevel];
+  return Math.round(getCharX() + level.targetDist * (canvas.width - 140));
+}
+function getTargetY() {
+  return getGroundY() - (LEVELS[state.currentLevel].targetY / SCALE);
+}
+function getTargetYMeters()    { return LEVELS[state.currentLevel].targetY; }
+function getTargetDistMeters() {
+  return Math.round(LEVELS[state.currentLevel].targetDist * (canvas.width - 140) * SCALE);
+}
+function getLaunchHeightMeters() { return LEVELS[state.currentLevel].launchHeight || 0; }
+ 
+// Core physics simulation — used for BOTH ghost and actual throw
+// x(t) = v·cos(θ)·t
+// y(t) = h + v·sin(θ)·t - 0.5·g·t²
+function simulateTrajectory(velocity, angleDeg, gravity, steps = 1200) {
+  const h0    = getLaunchHeightMeters();
+  const theta = angleDeg * Math.PI / 180;
+  const vx    = velocity * Math.cos(theta);
+  const vy    = velocity * Math.sin(theta);
+  const dt    = 0.03;
+  const pxPM  = 1 / SCALE;
+  const charX = getCharX();
+  const groundY = getGroundY();
+ 
+  const points = [];
+  let t = 0, maxY = h0, flightTime = 0;
+ 
+  for (let i = 0; i < steps; i++) {
+    const xM  = vx * t;
+    const yM  = h0 + vy * t - 0.5 * gravity * t * t;
+    const pxX = charX + xM * pxPM;
+    const pxY = groundY - yM * pxPM;
+ 
+    if (yM > maxY) maxY = yM;
+ 
+    if (yM < 0 && i > 0) {
+      const prevT  = t - dt;
+      const prevYM = h0 + vy * prevT - 0.5 * gravity * prevT * prevT;
+      flightTime   = prevT + prevYM / (prevYM - yM) * dt;
+      points.push({ x: charX + vx * flightTime * pxPM, y: groundY });
+      break;
+    }
+ 
+    points.push({ x: pxX, y: pxY });
+    t += dt;
+  }
+ 
+  flightTime = flightTime || t;
+  return { points, maxHeight: maxY, flightTime, range: vx * flightTime,
+           landX: points[points.length - 1]?.x };
+}
+ 
+// ============================================================
+// GHOST TRAJECTORY — TOGGLE + CALCULATION + DRAWING
+// ============================================================
+ 
+/*
+  TOGGLE LOGIC:
+  - ghostEnabled can be true/false
+  - ghostDirty flag: set whenever inputs change, cleared after recalc
+  - Ghost is NOT drawn during active throw animation (state.isAnimating)
+  - Ghost uses identical simulateTrajectory() call → landing point matches throw exactly
+*/
+function toggleGhost() {
+  state.ghostEnabled = !state.ghostEnabled;
+  const btn   = document.getElementById('ghostToggleBtn');
+  const label = document.getElementById('ghostSubLabel');
+ 
+  if (state.ghostEnabled) {
+    btn.classList.add('ghost-on');
+    label.textContent = 'Preview arc before shooting';
+    state.ghostDirty = true;
+  } else {
+    btn.classList.remove('ghost-on');
+    label.textContent = 'Click to enable arc preview';
+  }
+ 
+  drawScene();
+}
+ 
+// Rebuild ghost points when inputs change (called lazily before draw)
+function rebuildGhost() {
+  const v = parseFloat(document.getElementById('velocityInput').value);
+  const a = parseFloat(document.getElementById('angleInput').value);
+  if (isNaN(v) || v < 1 || isNaN(a) || a < 1 || a > 89) {
+    state.ghostPoints = null;
+    return;
+  }
+  const result = simulateTrajectory(v, a, state.gravity);
+  state.ghostPoints = result.points;
+  state.ghostDirty  = false;
+}
+ 
+/*
+  DRAW GHOST:
+  - Dashed semi-transparent grey/white arc
+  - Drawn BEFORE the actual throw trail so trail always renders on top
+  - Skips every other point for performance (visual quality unaffected)
+*/
+function drawGhost() {
+  if (!state.ghostEnabled || state.isAnimating) return;
+  if (state.ghostDirty) rebuildGhost();
+  const pts = state.ghostPoints;
+  if (!pts || pts.length < 2) return;
+ 
+  ctx.save();
+ 
+  // Dashed grey ghost path
+  ctx.strokeStyle = 'rgba(200, 220, 255, 0.28)';
+  ctx.lineWidth   = 1.5;
+  ctx.setLineDash([6, 7]);
+  ctx.lineCap     = 'round';
+  ctx.beginPath();
+  // Skip every other point for perf — still looks smooth
+  for (let i = 0; i < pts.length; i += 2) {
+    if (i === 0) ctx.moveTo(pts[i].x, pts[i].y);
+    else         ctx.lineTo(pts[i].x, pts[i].y);
+  }
+  ctx.stroke();
+  ctx.setLineDash([]);
+ 
+  // Landing spot indicator — small crosshair at ghost landing point
+  const last = pts[pts.length - 1];
+  ctx.strokeStyle = 'rgba(200,220,255,0.45)';
+  ctx.lineWidth   = 1;
+  const cr = 7;
+  ctx.beginPath();
+  ctx.moveTo(last.x - cr, last.y);
+  ctx.lineTo(last.x + cr, last.y);
+  ctx.moveTo(last.x, last.y - cr);
+  ctx.lineTo(last.x, last.y + cr);
+  ctx.stroke();
+ 
+  // Small circle at landing
+  ctx.beginPath();
+  ctx.arc(last.x, last.y, 3, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(200,220,255,0.5)';
+  ctx.fill();
+ 
+  ctx.restore();
+}
+ 
+// ============================================================
+// LIVE FORMULA STRIP — updates in real-time as inputs change
+// ============================================================
+function updateLiveFormula() {
+  const v = parseFloat(document.getElementById('velocityInput').value);
+  const a = parseFloat(document.getElementById('angleInput').value);
+  const g = state.gravity;
+ 
+  if (isNaN(v) || isNaN(a)) {
+    ['lfVx','lfVy','lfRange','lfPeak'].forEach(id => {
+      document.getElementById(id).textContent = '—';
+    });
+    return;
+  }
+ 
+  const theta = a * Math.PI / 180;
+  const vx    = v * Math.cos(theta);
+  const vy    = v * Math.sin(theta);
+  const h0    = getLaunchHeightMeters();
+ 
+  // Estimated range (for ground-level target h0=0: R = v²·sin2θ/g)
+  // For elevated: use quadratic approach for a quick estimate
+  // t_land from: 0 = h0 + vy·t - 0.5g·t² → t = (vy + sqrt(vy²+2g·h0))/g
+  const disc    = vy * vy + 2 * g * h0;
+  const tLand   = disc >= 0 ? (vy + Math.sqrt(disc)) / g : 0;
+  const estRange = vx * tLand;
+ 
+  // Peak height: h_max = h0 + vy²/(2g)
+  const peakH   = h0 + (vy * vy) / (2 * g);
+ 
+  document.getElementById('lfVx').textContent    = vx.toFixed(1)    + ' m/s';
+  document.getElementById('lfVy').textContent    = vy.toFixed(1)    + ' m/s';
+  //document.getElementById('lfRange').textContent = estRange.toFixed(1) + ' m';
+  //document.getElementById('lfPeak').textContent  = peakH.toFixed(1)   + ' m';
+}
+ 
+// ============================================================
+// DRAWING
+// ============================================================
+function drawScene(ballPos = null, trailPoints = null) {
+  if (canvas.width === 0) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+ 
+  drawBackground();
+  drawGround();
+  drawBuilding();
+ 
+  // Ghost drawn BEFORE target and trail so it sits visually behind
+  drawGhost();
+ 
+  drawTarget();
+  drawCharacter();
+ 
+  // Persistent trail after throw — solid orange arc
+  if (trailPoints)                                   drawTrail(trailPoints, true);
+  else if (state.lastThrowPoints && !state.isAnimating) drawTrail(state.lastThrowPoints, false);
+ 
+  if (ballPos) drawBall(ballPos.x, ballPos.y);
+}
+ 
+function drawBackground() {
+  const W = canvas.width, H = canvas.height;
+  const gy = getGroundY();
+ 
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  grad.addColorStop(0,   '#06080e');
+  grad.addColorStop(0.55,'#090c14');
+  grad.addColorStop(1,   '#0c1118');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+ 
+  ctx.strokeStyle = 'rgba(200,130,50,0.055)';
+  ctx.lineWidth = 1;
+  const horizonY = gy * 0.32, vanishX = W * 0.5;
+  const numLane = 14;
+  for (let i = 0; i <= numLane; i++) {
+    const tf   = i / numLane;
+    const bx   = W * tf;
+    const topX = vanishX + (bx - vanishX) * 0.02;
+    ctx.beginPath(); ctx.moveTo(topX, horizonY); ctx.lineTo(bx, gy + 2); ctx.stroke();
+  }
+  const numLat = 10;
+  for (let j = 1; j <= numLat; j++) {
+    const frac = (j / numLat) ** 1.8;
+    const ly   = horizonY + frac * (gy - horizonY);
+    const lFrac= 0.02 + frac * 0.98;
+    const lx0  = vanishX - vanishX * lFrac;
+    const lx1  = vanishX + (W - vanishX) * lFrac;
+    ctx.beginPath(); ctx.moveTo(lx0, ly); ctx.lineTo(lx1, ly); ctx.stroke();
+  }
+ 
+  ctx.strokeStyle = 'rgba(200,130,50,0.07)';
+  ctx.lineWidth = 1.5;
+  const arcCx = getCharX() + 4, arcRadPx = (canvas.width - 160) * 0.46;
+  ctx.beginPath(); ctx.arc(arcCx, gy, arcRadPx, -Math.PI, 0); ctx.stroke();
+ 
+  ctx.lineWidth = 1;
+  const laneW = 70, laneH = Math.min(gy * 0.28, 90);
+  ctx.strokeRect(getCharX() - laneW / 2, gy - laneH, laneW, laneH);
+ 
+  const level = LEVELS[state.currentLevel];
+  ctx.font      = `bold ${Math.min(H * 0.3, 150)}px Orbitron, monospace`;
+  ctx.fillStyle = 'rgba(255,100,30,0.03)';
+  ctx.textAlign = 'right';
+  ctx.fillText(level.name.toUpperCase(), W - 20, H * 0.6);
+  ctx.textAlign = 'left';
+}
+ 
+function drawGround() {
+  const gy = getGroundY(), W = canvas.width, H = canvas.height;
+  const plankH = 7;
+  const numPlanks = Math.ceil((H - gy) / plankH) + 1;
+  for (let i = 0; i < numPlanks; i++) {
+    const py = gy + i * plankH;
+    ctx.fillStyle = i % 2 === 0 ? 'rgba(160,90,30,0.18)' : 'rgba(140,75,22,0.14)';
+    ctx.fillRect(0, py, W, plankH);
+    ctx.strokeStyle = 'rgba(100,55,15,0.25)';
+    ctx.lineWidth = 0.5;
+    ctx.beginPath(); ctx.moveTo(0, py + plankH); ctx.lineTo(W, py + plankH); ctx.stroke();
+  }
+ 
+  ctx.shadowColor = 'rgba(255,120,30,0.55)';
+  ctx.shadowBlur  = 10;
+  ctx.strokeStyle = 'rgba(255,140,40,0.75)';
+  ctx.lineWidth   = 2.5;
+  ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(W, gy); ctx.stroke();
+  ctx.shadowBlur  = 0;
+ 
+  ctx.strokeStyle = 'rgba(255,140,40,0.25)';
+  ctx.lineWidth   = 1;
+  ctx.font        = '9px Space Mono, monospace';
+  ctx.fillStyle   = 'rgba(255,140,40,0.45)';
+  const charX = getCharX();
+  for (let px = charX; px < W; px += 100) {
+    const dist = Math.round((px - charX) * SCALE);
+    ctx.beginPath(); ctx.moveTo(px, gy); ctx.lineTo(px, gy + 6); ctx.stroke();
+    ctx.fillText(dist + 'm', px - 8, gy + 18);
+  }
+}
+ 
+function drawBuilding() {
+  const level = LEVELS[state.currentLevel];
+  const h = level.launchHeight || 0;
+  if (h <= 0) return;
+ 
+  const cx = getCharX(), groundY = getGroundY();
+  const buildingHeightPx = h / SCALE;
+  const bw = BUILDING_WIDTH, bx = cx - bw / 2;
+  const byTop = groundY - buildingHeightPx;
+ 
+  const bgrad = ctx.createLinearGradient(bx, byTop, bx + bw, byTop);
+  bgrad.addColorStop(0, 'rgba(0,180,220,0.25)');
+  bgrad.addColorStop(0.5, 'rgba(0,229,255,0.15)');
+  bgrad.addColorStop(1, 'rgba(0,100,160,0.2)');
+  ctx.fillStyle = bgrad;
+  ctx.fillRect(bx, byTop, bw, buildingHeightPx);
+ 
+  ctx.strokeStyle = 'rgba(0,229,255,0.6)';
+  ctx.lineWidth = 1.5;
+  ctx.shadowColor = 'rgba(0,229,255,0.4)';
+  ctx.shadowBlur = 8;
+  ctx.strokeRect(bx, byTop, bw, buildingHeightPx);
+  ctx.shadowBlur = 0;
+ 
+  const winCols = 3, winRows = Math.max(2, Math.floor(buildingHeightPx / 18));
+  const winW = 8, winH = 7;
+  const colSpacing = bw / (winCols + 1), rowSpacing = buildingHeightPx / (winRows + 1);
+  for (let r = 1; r <= winRows; r++) {
+    for (let c = 1; c <= winCols; c++) {
+      const wx = bx + c * colSpacing - winW / 2;
+      const wy = byTop + r * rowSpacing - winH / 2;
+      ctx.fillStyle   = (r + c) % 3 !== 0 ? 'rgba(0,229,255,0.35)' : 'rgba(0,229,255,0.05)';
+      ctx.strokeStyle = 'rgba(0,229,255,0.3)';
+      ctx.lineWidth   = 0.5;
+      ctx.fillRect(wx, wy, winW, winH);
+      ctx.strokeRect(wx, wy, winW, winH);
+    }
+  }
+ 
+  ctx.strokeStyle = 'rgba(0,229,255,0.9)';
+  ctx.lineWidth = 2.5;
+  ctx.shadowColor = 'rgba(0,229,255,0.7)';
+  ctx.shadowBlur = 10;
+  ctx.beginPath(); ctx.moveTo(bx - 6, byTop); ctx.lineTo(bx + bw + 6, byTop); ctx.stroke();
+  ctx.shadowBlur = 0;
+ 
+  ctx.fillStyle = 'rgba(0,229,255,0.7)';
+  ctx.font = 'bold 9px Space Mono';
+  ctx.textAlign = 'center';
+  ctx.fillText(`${h}m`, cx, byTop + buildingHeightPx / 2 + 4);
+  ctx.textAlign = 'left';
+ 
+  const arrowX = bx - 14;
+  ctx.strokeStyle = 'rgba(127,255,0,0.5)';
+  ctx.lineWidth = 1;
+  ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(arrowX, groundY); ctx.lineTo(arrowX, byTop); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(127,255,0,0.7)';
+  ctx.beginPath(); ctx.moveTo(arrowX, byTop); ctx.lineTo(arrowX - 4, byTop + 8); ctx.lineTo(arrowX + 4, byTop + 8); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(arrowX, groundY); ctx.lineTo(arrowX - 4, groundY - 8); ctx.lineTo(arrowX + 4, groundY - 8); ctx.fill();
+  ctx.fillStyle = 'rgba(127,255,0,0.85)';
+  ctx.font = 'bold 8px Orbitron, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(`h=${h}m`, arrowX, (groundY + byTop) / 2 + 4);
+  ctx.textAlign = 'left';
+}
+ 
+function drawCharacter() {
+  const cx = getCharX(), launchY = getLaunchY();
+  const scale = Math.min(canvas.height / 500, 1.2);
+  const h = 50 * scale;
+ 
+  ctx.fillStyle = '#00e5ff';
+  ctx.shadowColor = 'rgba(0,229,255,0.6)';
+  ctx.shadowBlur = 12;
+  ctx.beginPath(); ctx.arc(cx, launchY - h, 8 * scale, 0, Math.PI * 2); ctx.fill();
+  ctx.fillRect(cx - 5 * scale, launchY - h + 9 * scale, 10 * scale, 20 * scale);
+  ctx.fillRect(cx - 5 * scale, launchY - h + 29 * scale, 4 * scale, 14 * scale);
+  ctx.fillRect(cx + 1 * scale, launchY - h + 29 * scale, 4 * scale, 14 * scale);
+ 
+  const angleRad = state.angle * Math.PI / 180;
+  const armLen   = 18 * scale;
+  const armEndX  = cx + Math.cos(angleRad) * armLen;
+  const armEndY  = (launchY - h + 15 * scale) - Math.sin(angleRad) * armLen;
+ 
+  ctx.strokeStyle = '#ff8c30';
+  ctx.lineWidth   = 3 * scale;
+  ctx.beginPath(); ctx.moveTo(cx, launchY - h + 15 * scale); ctx.lineTo(armEndX, armEndY); ctx.stroke();
+  ctx.shadowBlur  = 0;
+ 
+  const mbR = 5 * scale;
+  const mbGrad = ctx.createRadialGradient(armEndX - mbR * 0.3, armEndY - mbR * 0.3, mbR * 0.1, armEndX, armEndY, mbR);
+  mbGrad.addColorStop(0,   '#ffb347');
+  mbGrad.addColorStop(0.5, '#f06010');
+  mbGrad.addColorStop(1,   '#a03508');
+  ctx.shadowColor = 'rgba(255,100,20,0.6)';
+  ctx.shadowBlur  = 8;
+  ctx.fillStyle   = mbGrad;
+  ctx.beginPath(); ctx.arc(armEndX, armEndY, mbR, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur  = 0;
+ 
+  ctx.strokeStyle = 'rgba(80,20,5,0.55)'; ctx.lineWidth = 0.8;
+  ctx.beginPath(); ctx.arc(armEndX, armEndY, mbR, 0.4, Math.PI - 0.4); ctx.stroke();
+  ctx.beginPath(); ctx.arc(armEndX, armEndY, mbR, Math.PI + 0.4, -0.4); ctx.stroke();
+ 
+  ctx.strokeStyle = 'rgba(255,107,53,0.5)'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, launchY - h + 15 * scale, 22 * scale, -Math.PI / 2, -(state.angle * Math.PI / 180), true); ctx.stroke();
+ 
+  ctx.fillStyle = 'rgba(255,107,53,0.9)';
+  ctx.font = `bold ${10 * scale}px Space Mono`;
+  ctx.fillText(`${state.angle}°`, cx + 20, launchY - h - 4);
+}
+ 
+function drawTarget() {
+  const tx  = getTargetX(), ty = getTargetY(), gy = getGroundY();
+  const lvl = LEVELS[state.currentLevel], r = lvl.radius;
+  const t   = Date.now() / 1000, isMidAir = lvl.targetY > 0;
+ 
+  const poleCx   = tx + r * 0.6;
+  const boardTop = ty - r * 1.8, boardH = r * 2.4, boardW = r * 1.3;
+ 
+  ctx.strokeStyle = 'rgba(200,200,220,0.45)'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(poleCx, gy); ctx.lineTo(poleCx, boardTop + boardH * 0.5); ctx.stroke();
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(poleCx, boardTop + boardH * 0.5); ctx.lineTo(poleCx - r * 0.55, boardTop + boardH * 0.5); ctx.stroke();
+  ctx.lineCap = 'butt';
+ 
+  const bbX = tx + r * 0.35 - boardW / 2, bbY = boardTop;
+  ctx.fillStyle = 'rgba(0,0,0,0.35)'; ctx.fillRect(bbX + 3, bbY + 3, boardW, boardH);
+  const bbGrad = ctx.createLinearGradient(bbX, bbY, bbX + boardW, bbY + boardH);
+  bbGrad.addColorStop(0, 'rgba(230,235,255,0.88)'); bbGrad.addColorStop(1, 'rgba(185,195,225,0.75)');
+  ctx.fillStyle = bbGrad; ctx.fillRect(bbX, bbY, boardW, boardH);
+  ctx.strokeStyle = 'rgba(200,210,255,0.9)'; ctx.lineWidth = 1.5; ctx.strokeRect(bbX, bbY, boardW, boardH);
+ 
+  const sqPad = boardW * 0.14, sqW = boardW - sqPad * 2, sqH = boardH * 0.38;
+  const sqX = bbX + sqPad, sqY = bbY + boardH * 0.42;
+  ctx.strokeStyle = 'rgba(255,80,30,0.85)'; ctx.lineWidth = 1.5; ctx.strokeRect(sqX, sqY, sqW, sqH);
+ 
+  const rimY = ty, rimR = r * 0.92, rimThick = Math.max(2.5, r * 0.14);
+  const pulse = Math.sin(t * 3) * 0.15 + 0.85;
+  ctx.shadowColor = `rgba(255,90,20,${0.5 * pulse})`; ctx.shadowBlur = 10;
+  ctx.strokeStyle = 'rgba(200,65,10,0.6)'; ctx.lineWidth = rimThick * 0.7;
+  ctx.beginPath(); ctx.arc(tx, rimY, rimR, 0, Math.PI); ctx.stroke();
+  ctx.strokeStyle = '#ff5a14'; ctx.lineWidth = rimThick;
+  ctx.beginPath(); ctx.arc(tx, rimY, rimR, Math.PI, Math.PI * 2); ctx.stroke();
+  ctx.shadowBlur = 0;
+ 
+  ctx.strokeStyle = 'rgba(255,90,20,0.7)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(tx - rimR, rimY); ctx.lineTo(tx - rimR - 3, rimY - 5); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(tx + rimR, rimY); ctx.lineTo(tx + rimR + 3, rimY - 5); ctx.stroke();
+ 
+  const netH = rimR * 1.35, netSegs = 10, netRows = 5;
+  ctx.strokeStyle = 'rgba(255,255,255,0.45)'; ctx.lineWidth = 0.8;
+  for (let i = 0; i <= netSegs; i++) {
+    const frac  = i / netSegs, angle = Math.PI + frac * Math.PI;
+    const topX  = tx + rimR * Math.cos(angle);
+    const topY  = rimY + rimR * 0.08 * Math.abs(Math.sin(angle));
+    const taper = 0.35;
+    ctx.beginPath();
+    ctx.bezierCurveTo(topX, topY + netH * 0.4, tx + rimR * taper * Math.cos(angle), rimY + netH - netH * 0.3,
+                      tx + rimR * taper * Math.cos(angle), rimY + netH);
+    ctx.moveTo(topX, topY); ctx.stroke();
+  }
+  for (let row = 1; row <= netRows; row++) {
+    const rowFrac = row / (netRows + 1), rowY = rimY + netH * rowFrac;
+    const taperAt = 0.35 + (1 - 0.35) * (1 - rowFrac), rowHalfW = rimR * taperAt;
+    ctx.beginPath(); ctx.moveTo(tx - rowHalfW * 0.92, rowY); ctx.lineTo(tx + rowHalfW * 0.92, rowY); ctx.stroke();
+  }
+ 
+  ctx.fillStyle = 'rgba(255,140,50,0.85)'; ctx.font = 'bold 9px Orbitron, monospace'; ctx.textAlign = 'center';
+  ctx.fillText('HOOP', tx, boardTop - 7);
+ 
+  if (isMidAir) {
+    const hMeters = lvl.targetY;
+    ctx.strokeStyle = 'rgba(127,255,0,0.5)'; ctx.lineWidth = 1; ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(tx + r + 10, gy); ctx.lineTo(tx + r + 10, ty); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = 'rgba(127,255,0,0.7)';
+    ctx.beginPath(); ctx.moveTo(tx+r+10,ty); ctx.lineTo(tx+r+6,ty+8); ctx.lineTo(tx+r+14,ty+8); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(tx+r+10,gy); ctx.lineTo(tx+r+6,gy-8); ctx.lineTo(tx+r+14,gy-8); ctx.fill();
+    ctx.fillStyle = 'rgba(127,255,0,0.9)'; ctx.font = 'bold 9px Space Mono'; ctx.textAlign = 'left';
+    ctx.fillText(`h=${hMeters}m`, tx + r + 16, (gy + ty) / 2 + 4);
+  }
+ 
+  const charX = getCharX(), distMeters = getTargetDistMeters(), annotY = gy + 28;
+  ctx.strokeStyle = 'rgba(255,140,40,0.22)'; ctx.lineWidth = 1; ctx.setLineDash([4, 6]);
+  ctx.beginPath(); ctx.moveTo(charX, annotY); ctx.lineTo(tx, annotY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(255,140,40,0.6)'; ctx.font = 'bold 9px Space Mono'; ctx.textAlign = 'center';
+  ctx.fillText(`← ${distMeters} m →`, (charX + tx) / 2, annotY + 14);
+  ctx.textAlign = 'left';
+}
+ 
+/*
+  DRAW TRAIL — now has TWO modes:
+  1. During animation (live=true)  → solid bright orange  (active throw)
+  2. Persistent after throw (live=false) → faded orange with dashes (past shot reference)
+ 
+  Both are visually distinct from ghost (which is grey/white dashed).
+*/
+function drawTrail(points, live = false) {
+  if (!points || points.length < 2) return;
+  ctx.save();
+ 
+  if (live) {
+    // Active throw — bright solid arc
+    ctx.strokeStyle = 'rgba(255, 140, 40, 0.80)';
+    ctx.lineWidth   = 2;
+    ctx.setLineDash([]);
+  } else {
+    // Persistent trail after ball lands — faded, dashed
+    ctx.strokeStyle = 'rgba(255, 120, 30, 0.38)';
+    ctx.lineWidth   = 1.5;
+    ctx.setLineDash([4, 5]);
+  }
+ 
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    if (i === 0) ctx.moveTo(p.x, p.y);
+    else         ctx.lineTo(p.x, p.y);
+  });
+  ctx.stroke();
+  ctx.setLineDash([]);
+ 
+  // Landing spot dot for persistent trail
+  if (!live && points.length > 0) {
+    const last = points[points.length - 1];
+    ctx.beginPath();
+    ctx.arc(last.x, last.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,120,30,0.55)';
+    ctx.fill();
+    // Small "last shot" label
+    ctx.fillStyle = 'rgba(255,120,30,0.55)';
+    ctx.font = '8px Space Mono';
+    ctx.fillText('last', last.x + 6, last.y - 4);
+  }
+ 
+  ctx.restore();
+}
+ 
+function drawBall(x, y) {
+  const R = 9;
+  ctx.shadowColor = 'rgba(255,110,30,0.75)';
+  ctx.shadowBlur  = 18;
+  const bgrad = ctx.createRadialGradient(x - R * 0.3, y - R * 0.35, R * 0.1, x, y, R);
+  bgrad.addColorStop(0,   '#ffb347');
+  bgrad.addColorStop(0.45,'#f06010');
+  bgrad.addColorStop(1,   '#a03508');
+  ctx.fillStyle = bgrad;
+  ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+ 
+  ctx.strokeStyle = 'rgba(80,20,5,0.65)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(x, y-R); ctx.bezierCurveTo(x-R*0.55,y-R*0.4, x-R*0.55,y+R*0.4, x, y+R); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x, y-R); ctx.bezierCurveTo(x+R*0.55,y-R*0.4, x+R*0.55,y+R*0.4, x, y+R); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x-R, y); ctx.bezierCurveTo(x-R*0.4,y-R*0.55, x+R*0.4,y-R*0.55, x+R, y); ctx.stroke();
+ 
+  ctx.fillStyle = 'rgba(255,255,255,0.32)';
+  ctx.beginPath(); ctx.ellipse(x - R*0.28, y - R*0.3, R*0.28, R*0.18, -0.5, 0, Math.PI * 2); ctx.fill();
+}
+ 
+// ============================================================
+// ANIMATION
+// ============================================================
+let animFrame = null;
+ 
+function throwBall() {
+  if (state.isAnimating) return;
+ 
+  const velInput = document.getElementById('velocityInput');
+  const angInput = document.getElementById('angleInput');
+  const velErr   = document.getElementById('velocityError');
+  const angErr   = document.getElementById('angleError');
+  velErr.textContent = ''; angErr.textContent = '';
+ 
+  const v = parseFloat(velInput.value);
+  const a = parseFloat(angInput.value);
+  let valid = true;
+ 
+  if (isNaN(v) || v < 1 || v > 200) { velErr.textContent = '⚠ Enter a value between 1–200 m/s'; valid = false; }
+  if (isNaN(a) || a < 1 || a > 89)  { angErr.textContent = '⚠ Enter an angle between 1–89°';   valid = false; }
+  if (!valid) return;
+ 
+  state.velocity = v;
+  state.angle    = a;
+  state.isAnimating = true;
+  state.attempts++;
+  state.lastThrowPoints = null;
+ 
+  document.getElementById('throwBtn').disabled = true;
+  document.getElementById('attemptsBadge').textContent = `SHOTS: ${state.attempts}`;
+  document.getElementById('throwFeedbackPill').className = 'throw-feedback-pill';
+ 
+  const { points, maxHeight, flightTime, range } = simulateTrajectory(state.velocity, state.angle, state.gravity);
+ 
+  document.getElementById('statRange').textContent  = range.toFixed(1)      + 'm';
+  document.getElementById('statHeight').textContent = maxHeight.toFixed(1)  + 'm';
+  document.getElementById('statTime').textContent   = flightTime.toFixed(2) + 's';
+  document.getElementById('statVelo').textContent   = state.velocity.toFixed(1) + 'm/s';
+ 
+  const trailPoints = [];
+  let idx = 0;
+  const totalPts = points.length;
+ 
+  function animate() {
+    if (idx >= totalPts) {
+      const last  = points[totalPts - 1];
+      const tx    = getTargetX(), ty = getTargetY();
+      const level = LEVELS[state.currentLevel];
+      const hit   = checkHit(points, tx, ty, level.radius);
+ 
+      state.lastThrowPoints = trailPoints.slice();
+      drawScene(last, trailPoints);
+      state.isAnimating = false;
+      document.getElementById('throwBtn').disabled = false;
+ 
+      if (hit) {
+        showDirectionalFeedback('hit', 0, 0);
+        showFeedback(true, level);
+        spawnParticles(tx, ty);
+        if (!state.completedLevels.includes(state.currentLevel)) {
+          state.completedLevels.push(state.currentLevel);
+          localStorage.setItem('gtl_completed', JSON.stringify(state.completedLevels));
+          updateLevelButtons();
+        }
+      } else {
+        const landX = last.x;
+        let feedbackType = 'short';
+        const dx = (landX - tx) * SCALE;
+        if      (landX < tx - level.radius) feedbackType = 'short';
+        else if (landX > tx + level.radius) feedbackType = 'long';
+        else if (level.targetY > 0) {
+          const nearestPt = findNearestXPoint(points, tx);
+          feedbackType = (nearestPt && nearestPt.y > ty + level.radius) ? 'low' : 'high';
+        }
+        showDirectionalFeedback(feedbackType, dx, level.targetY);
+        showFeedback(false, level, landX - tx);
+      }
+      return;
+    }
+ 
+    const step = Math.max(1, Math.floor(totalPts / 80));
+    for (let s = 0; s < step && idx < totalPts; s++, idx++) {
+      trailPoints.push(points[idx]);
+    }
+    drawScene(trailPoints[trailPoints.length - 1], trailPoints);
+    animFrame = requestAnimationFrame(animate);
+  }
+ 
+  animFrame = requestAnimationFrame(animate);
+}
+ 
+function checkHit(points, tx, ty, radius) {
+  for (const p of points) {
+    if (Math.sqrt((p.x - tx) ** 2 + (p.y - ty) ** 2) <= radius) return true;
+  }
+  return false;
+}
+ 
+function findNearestXPoint(points, tx) {
+  let best = null, bestDist = Infinity;
+  for (const p of points) {
+    const d = Math.abs(p.x - tx);
+    if (d < bestDist) { bestDist = d; best = p; }
+  }
+  return best;
+}
+ 
+function showDirectionalFeedback(type, dxMeters, targetHeightM) {
+  const pill = document.getElementById('throwFeedbackPill');
+  const messages = {
+    hit:   '🏀 SCORE! Perfect shot.',
+    short: '📏 TOO SHORT — ball landed before the hoop',
+    long:  '📏 TOO FAR — ball overshot the hoop',
+    high:  '📐 TOO HIGH — ball passed above the rim',
+    low:   '📐 TOO LOW — ball passed below the rim',
+  };
+  pill.textContent = messages[type] || '';
+  pill.className = `throw-feedback-pill ${type} visible`;
+}
+ 
+function resetBall() {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  state.isAnimating = false;
+  state.lastThrowPoints = null;
+  state.ghostDirty = true;
+  document.getElementById('throwBtn').disabled = false;
+  document.getElementById('throwFeedbackPill').className = 'throw-feedback-pill';
+  document.getElementById('velocityError').textContent = '';
+  document.getElementById('angleError').textContent = '';
+  closeFeedback();
+  drawScene();
+}
+ 
+// ============================================================
+// FEEDBACK
+// ============================================================
+function showFeedback(success, level, missBy = 0) {
+  const overlay = document.getElementById('feedbackOverlay');
+  const card    = document.getElementById('feedbackCard');
+  card.className = 'feedback-card ' + (success ? 'success' : 'fail');
+  document.getElementById('feedbackIcon').textContent  = success ? '🏀' : '💨';
+  document.getElementById('feedbackTitle').textContent = success ? 'SCORE! PERFECT SHOT.' : 'MISSED!';
+ 
+  const h0 = level.launchHeight || 0;
+  const missM = Math.abs(Math.round(missBy * SCALE));
+  document.getElementById('feedbackMsg').textContent = success
+    ? `Score! Shot on attempt ${state.attempts} — v₀ = ${state.velocity} m/s, θ = ${state.angle}°${h0 > 0 ? `, launch h = ${h0} m` : ''}.`
+    : `Missed by ~${missM}m. Study the arc trail and adjust your velocity or angle calculation.`;
+ 
+  document.getElementById('physicsFact').innerHTML = success ? level.successFact : level.failFact;
+  document.getElementById('nextBtn').style.display =
+    success && state.currentLevel < LEVELS.length - 1 ? 'block' : 'none';
+  overlay.classList.add('visible');
+}
+ 
+function closeFeedback() {
+  document.getElementById('feedbackOverlay').classList.remove('visible');
+}
+ 
+function nextLevel() {
+  closeFeedback();
+  if (state.currentLevel < LEVELS.length - 1) selectLevel(state.currentLevel + 1);
+}
+ 
+// ============================================================
+// PARTICLES
+// ============================================================
+function spawnParticles(x, y) {
+  const colors = ['#00e5ff','#ff6b35','#7fff00','#ffffff','#ff3366'];
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const angle = (i / 16) * Math.PI * 2;
+    const dist  = 40 + Math.random() * 80;
+    p.style.cssText = `
+      left: ${x + canvas.getBoundingClientRect().left + (window.scrollX || 0)}px;
+      top:  ${y + canvas.getBoundingClientRect().top  + (window.scrollY || 0)}px;
+      width: ${4 + Math.random() * 6}px; height: ${4 + Math.random() * 6}px;
+      background: ${colors[Math.floor(Math.random() * colors.length)]};
+      --dx: ${Math.cos(angle) * dist}px; --dy: ${Math.sin(angle) * dist}px;
+      position: fixed; z-index: 200;
+    `;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1000);
+  }
+}
+ 
+// ============================================================
+// LEVEL MANAGEMENT
+// ============================================================
+function buildLevelButtons() {
+  const grid = document.getElementById('levelGrid');
+  grid.innerHTML = '';
+  LEVELS.forEach((level, i) => {
+    const btn = document.createElement('button');
+    const isElevated  = (level.launchHeight || 0) > 0;
+    const isActive    = i === state.currentLevel;
+    const isCompleted = state.completedLevels.includes(i);
+    btn.className = 'level-btn'
+      + (isElevated  ? ' elevated'  : '')
+      + (isActive    ? ' active'    : '')
+      + (isCompleted ? ' completed' : '');
+    btn.innerHTML = `<span class="level-icon">${level.icon}</span>LVL ${level.id}<br>${level.name}`;
+    btn.onclick = () => selectLevel(i);
+    grid.appendChild(btn);
+  });
+}
+ 
+function updateLevelButtons() {
+  document.querySelectorAll('.level-btn').forEach((btn, i) => {
+    const level = LEVELS[i];
+    btn.className = 'level-btn'
+      + ((level.launchHeight || 0) > 0 ? ' elevated'  : '')
+      + (i === state.currentLevel        ? ' active'    : '')
+      + (state.completedLevels.includes(i)? ' completed' : '');
+  });
+}
+ 
+function selectLevel(idx) {
+  if (animFrame) cancelAnimationFrame(animFrame);
+  state.isAnimating = false;
+  state.currentLevel = idx;
+  state.attempts = 0;
+  state.lastThrowPoints = null;
+  state.ghostDirty = true;   // ← force ghost recalc for new level geometry
+ 
+  const level = LEVELS[idx];
+  state.gravity = level.gravity;
+ 
+  document.getElementById('throwBtn').disabled = false;
+  document.getElementById('attemptsBadge').textContent = 'SHOTS: 0';
+  document.getElementById('gravVal').textContent  = level.gravity.toFixed(2);
+  document.getElementById('gravName').textContent = `${level.icon} ${level.name}`;
+  document.getElementById('objText').textContent  = level.objective;
+  document.getElementById('throwFeedbackPill').className = 'throw-feedback-pill';
+ 
+  const customSection = document.getElementById('customGravSection');
+  if (idx === 4) {
+    customSection.classList.add('visible');
+    document.getElementById('customGravInput').value = state.gravity;
+  } else {
+    customSection.classList.remove('visible');
+  }
+ 
+  ['statRange','statHeight','statTime','statVelo'].forEach(id => {
+    document.getElementById(id).textContent = '—';
+  });
+  document.getElementById('velocityError').textContent = '';
+  document.getElementById('angleError').textContent    = '';
+ 
+  setTimeout(updateTargetInfoPanel, 50);
+  closeFeedback();
+  updateLevelButtons();
+  updateLiveFormula();
+  drawScene();
+}
+ 
+function updateTargetInfoPanel() {
+  const level   = LEVELS[state.currentLevel];
+  const distM   = getTargetDistMeters();
+  document.getElementById('infoDistance').textContent = distM + ' m';
+  document.getElementById('infoHeight').textContent   = level.targetY > 0 ? level.targetY + ' m' : '0 m (ground)';
+  document.getElementById('infoGravity').textContent  = state.gravity.toFixed(2) + ' m/s²';
+  document.getElementById('infoLaunchH').textContent  = (level.launchHeight || 0) + ' m';
+  document.getElementById('launchHRow').style.display = 'flex';
+}
+ 
+// ============================================================
+// INPUT EVENTS — now also trigger ghost + live formula
+// ============================================================
+document.getElementById('velocityInput').addEventListener('input', function() {
+  const v = parseFloat(this.value);
+  if (!isNaN(v) && v >= 1 && v <= 200) {
+    state.velocity = v;
+    document.getElementById('velocityError').textContent = '';
+  }
+  state.ghostDirty = true;   // ← mark ghost as stale
+  updateLiveFormula();
+  if (!state.isAnimating) drawScene();
+});
+ 
+document.getElementById('angleInput').addEventListener('input', function() {
+  const a = parseFloat(this.value);
+  if (!isNaN(a) && a >= 1 && a <= 89) {
+    state.angle = a;
+    document.getElementById('angleError').textContent = '';
+  }
+  state.ghostDirty = true;   // ← mark ghost as stale
+  updateLiveFormula();
+  if (!state.isAnimating) drawScene();
+});
+ 
+document.getElementById('customGravInput').addEventListener('input', function() {
+  const g = parseFloat(this.value);
+  if (!isNaN(g) && g >= 0.1 && g <= 50) {
+    state.gravity = g;
+    document.getElementById('gravVal').textContent = g.toFixed(1);
+    updateTargetInfoPanel();
+    state.ghostDirty = true;
+    updateLiveFormula();
+    drawScene();
+  }
+});
+ 
+document.getElementById('velocityInput').addEventListener('keydown', e => { if (e.key === 'Enter') throwBall(); });
+document.getElementById('angleInput').addEventListener('keydown', e => { if (e.key === 'Enter') throwBall(); });
+ 
+// ============================================================
+// RENDER LOOP (idle 30fps — redraws for target pulse animation)
+// ============================================================
+let lastRenderTime = 0;
+function idleLoop(time) {
+  if (!state.isAnimating && time - lastRenderTime > 50) {
+    drawScene();
+    lastRenderTime = time;
+  }
+  requestAnimationFrame(idleLoop);
+}
+ 
+// ============================================================
+// INTRO / INIT
+// ============================================================
+function startGame() {
+  document.getElementById('introScreen').classList.add('hidden');
+  init();
+}
+ 
+function init() {
+  resizeCanvas();
+  buildLevelButtons();
+  selectLevel(0);
+  updateLiveFormula();
+  requestAnimationFrame(idleLoop);
+}
+ 
+// NOTE: Original DOMContentLoaded startup is intentionally disabled here.
+// Startup is now managed by the flashcard system below (fcStartLab / DOMContentLoaded).
+// The original logic is preserved verbatim; only its execution is deferred.
+/* -- original startup (managed by flashcard) --
+window.addEventListener('DOMContentLoaded', () => {
+  const visited = localStorage.getItem('gtl_visited');
+  if (visited) {
+    document.getElementById('introScreen').classList.add('hidden');
+    init();
+  } else {
+    localStorage.setItem('gtl_visited', '1');
+  }
+});
+*/
+// ============================================================
+// FLASHCARD START — JS
+// ============================================================
+function fcShowCard() {
+  var overlay = document.getElementById('fc-overlay');
+  overlay.classList.remove('fc-hidden');
+}
+ 
+function fcHideCard() {
+  var overlay = document.getElementById('fc-overlay');
+  overlay.classList.add('fc-hidden');
+}
+ 
+function fcStartLab() {
+  fcHideCard();
+  // If the game has not been initialised yet (first visit),
+  // trigger the existing intro screen's start flow.
+  // If it's already running (reopen), just hide the overlay.
+  var introScreen = document.getElementById('introScreen');
+  if (introScreen && !introScreen.classList.contains('hidden')) {
+    // Game hasn't started yet — kick it off exactly as the
+    // original startGame() does, preserving all existing logic.
+    introScreen.classList.add('hidden');
+    init();
+  }
+  // else: game already running, flashcard was just reopened — do nothing more.
+}
+ 
+// Show flashcard on page load instead of letting DOMContentLoaded
+// auto-start. We intercept the localStorage check: if already visited,
+// we still show the flashcard overlay (it's quick to dismiss), but we
+// pre-initialise the game in the background so it's instant on Start.
+window.addEventListener('DOMContentLoaded', function () {
+  // Always show flashcard first
+  fcShowCard();
+ 
+  // If returning visitor, silently init the game behind the overlay
+  // so clicking Start Lab feels instant.
+  var visited = localStorage.getItem('gtl_visited');
+  if (visited) {
+    var introScreen = document.getElementById('introScreen');
+    if (introScreen) introScreen.classList.add('hidden');
+    init();
+  } else {
+    localStorage.setItem('gtl_visited', '1');
+  }
+}, { once: true });
+// ============================================================
+// FLASHCARD END — JS
+// ============================================================
+</script>
+<!-- Responsive changes start — sticky mobile action bar -->
+<!-- On mobile this bar is fixed at the bottom so SHOOT is always reachable
+     without scrolling away from the canvas visualization. -->
+<div class="mobile-action-bar">
+  <button class="btn btn-throw" onclick="throwBall()" id="throwBtnMobile">🏀 SHOOT</button>
+  <button class="btn btn-reset" onclick="resetBall()">↺ RESET</button>
+</div>
+<!-- Responsive changes end — sticky mobile action bar -->
+ 
+<script>
+// Responsive changes start — keep mobile throw button disabled state in sync
+(function() {
+  var desktopBtn = document.getElementById('throwBtn');
+  var mobileBtn  = document.getElementById('throwBtnMobile');
+  if (!desktopBtn || !mobileBtn) return;
+  var observer = new MutationObserver(function() {
+    mobileBtn.disabled = desktopBtn.disabled;
+  });
+  observer.observe(desktopBtn, { attributes: true, attributeFilter: ['disabled'] });
+})();
+// Responsive changes end — keep mobile throw button disabled state in sync
+</script>
+ 
+</body>
+</html>

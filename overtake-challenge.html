@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overtake Challenge </title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:       #05070f;
+  --surface:  #090d1c;
+  --surface2: #0d1328;
+  --surface3: #111a35;
+  --accent:   #c97bff;
+  --accent2:  #00e5ff;
+  --accent3:  #7fff00;
+  --accent4:  #ffe135;
+  --red:      #ff3355;
+  --green:    #00ff88;
+  --text:     #dce8ff;
+  --muted:    #3d5070;
+  --glow:     0 0 22px rgba(201,123,255,0.45);
+  --glow2:    0 0 22px rgba(0,229,255,0.35);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  min-height: 100vh;
+  overflow: hidden;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(201,123,255,0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(201,123,255,0.02) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none; z-index: 0;
+}
+.intro-screen {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 20px; text-align: center; padding: 24px;
+  transition: opacity .5s;
+}
+.intro-screen.hidden { opacity: 0; pointer-events: none; }
+.intro-logo {
+  font-family: 'Orbitron', monospace; font-size: clamp(1.6rem,5vw,3.2rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #c97bff, #00e5ff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 24px rgba(201,123,255,.6));
+  animation: logopulse 2s ease-in-out infinite;
+}
+@keyframes logopulse {
+  0%,100% { filter: drop-shadow(0 0 16px rgba(201,123,255,.45)); }
+  50%      { filter: drop-shadow(0 0 38px rgba(201,123,255,.9)); }
+}
+.intro-badge {
+  background: rgba(0,229,255,.08); border: 1px solid rgba(0,229,255,.3);
+  color: var(--accent2); font-size: .62rem; letter-spacing: .25em;
+  padding: 6px 18px; border-radius: 20px; text-transform: uppercase;
+}
+.intro-desc {
+  max-width: 540px; font-size: .78rem; color: var(--text);
+  line-height: 2; opacity: .85;
+}
+.intro-desc strong { color: var(--accent); }
+.intro-formula {
+  font-family: 'Orbitron', monospace; font-size: .65rem; color: var(--accent2);
+  background: var(--surface); border: 1px solid rgba(0,229,255,0.2);
+  padding: 14px 28px; border-radius: 8px; letter-spacing: .04em;
+  line-height: 2.2; text-align: left;
+}
+.intro-formula .f-step { color: var(--muted); font-size: .55rem; }
+.btn-start {
+  font-family: 'Orbitron', monospace; font-size: .88rem; font-weight: 700;
+  padding: 14px 48px;
+  background: linear-gradient(135deg, #c97bff, #6b00cc);
+  color: #fff; border: none; border-radius: 6px; cursor: pointer;
+  letter-spacing: .14em; text-transform: uppercase;
+  box-shadow: var(--glow); transition: all .2s;
+  animation: startbounce 1s ease-in-out infinite alternate;
+}
+@keyframes startbounce {
+  from { transform: translateY(0);   box-shadow: var(--glow); }
+  to   { transform: translateY(-5px); box-shadow: 0 0 44px rgba(201,123,255,.7); }
+}
+.btn-start:hover { filter: brightness(1.12); }
+header {
+  position: sticky; top: 0; z-index: 100;
+  background: rgba(5,7,15,0.94); backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(201,123,255,0.12);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 20px; gap: 16px;
+}
+.logo {
+  font-family: 'Orbitron', monospace; font-size: clamp(.9rem,2.5vw,1.35rem);
+  font-weight: 900;
+  background: linear-gradient(135deg, #c97bff, #00e5ff);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.header-tag {
+  font-size: .52rem; letter-spacing: .18em; color: var(--accent2);
+  background: rgba(0,229,255,.07); border: 1px solid rgba(0,229,255,.2);
+  padding: 3px 10px; border-radius: 20px; text-transform: uppercase;
+}
+.back-btn {
+  font-family: 'Orbitron', monospace; font-size: .52rem; color: var(--muted);
+  text-decoration: none; letter-spacing: .1em; border: 1px solid rgba(255,255,255,.08);
+  padding: 5px 10px; border-radius: 4px; transition: all .2s;
+}
+.back-btn:hover { color: var(--accent2); border-color: var(--accent2); }
+.app {
+  display: grid;
+  grid-template-columns: 258px 1fr 280px;
+  height: calc(100vh - 52px);
+  position: relative; z-index: 5;
+}
+.sidebar {
+  background: var(--surface);
+  border-right: 1px solid rgba(201,123,255,0.1);
+  display: flex; flex-direction: column; gap: 0; overflow-y: auto;
+}
+.panel {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.panel-title {
+  font-family: 'Orbitron', monospace; font-size: .52rem; letter-spacing: .22em;
+  color: var(--accent); text-transform: uppercase;
+  padding-bottom: 8px; border-bottom: 1px solid rgba(201,123,255,.15);
+  margin-bottom: 10px;
+}
+.jee-problem {
+  background: var(--surface2); border: 1px solid rgba(0,229,255,.2);
+  border-radius: 6px; padding: 12px; font-size: .62rem; line-height: 2;
+  color: var(--text);
+}
+.jee-problem .prob-title {
+  font-family: 'Orbitron', monospace; font-size: .58rem; color: var(--accent2);
+  letter-spacing: .1em; text-transform: uppercase; margin-bottom: 8px;
+  padding-bottom: 6px; border-bottom: 1px solid rgba(0,229,255,.15);
+}
+.jee-problem .prob-given { color: var(--muted); font-size: .58rem; }
+.jee-problem .prob-val { color: var(--accent4); font-family: 'Orbitron', monospace; font-size: .7rem; }
+.jee-problem .prob-find { color: var(--accent3); font-weight: 700; margin-top: 8px; padding-top: 6px; border-top: 1px solid rgba(255,255,255,.05); }
+.jee-problem .prob-hint { color: rgba(201,123,255,.6); font-size: .55rem; margin-top: 6px; }
+.diff-row { display: flex; gap: 5px; margin-top: 8px; }
+.diff-chip {
+  flex: 1; font-family: 'Orbitron', monospace; font-size: .48rem; font-weight: 700;
+  letter-spacing: .06em; padding: 5px 3px; border-radius: 4px; cursor: pointer;
+  text-transform: uppercase; text-align: center; border: 1px solid;
+  transition: all .18s; background: var(--surface2);
+}
+.diff-chip.easy   { color: var(--green);   border-color: rgba(0,255,136,.2); }
+.diff-chip.medium { color: var(--accent4); border-color: rgba(255,225,53,.2); }
+.diff-chip.hard   { color: var(--red);     border-color: rgba(255,51,85,.2); }
+.diff-chip.active.easy   { background: rgba(0,255,136,.1);   border-color: var(--green);   box-shadow: 0 0 8px rgba(0,255,136,.2); }
+.diff-chip.active.medium { background: rgba(255,225,53,.08); border-color: var(--accent4); box-shadow: 0 0 8px rgba(255,225,53,.15); }
+.diff-chip.active.hard   { background: rgba(255,51,85,.08);  border-color: var(--red);     box-shadow: 0 0 8px rgba(255,51,85,.15); }
+.level-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.lvl-btn {
+  background: var(--surface2); border: 1px solid rgba(201,123,255,.15);
+  color: var(--text); font-family: 'Space Mono', monospace; font-size: .54rem;
+  padding: 7px 4px; cursor: pointer; border-radius: 4px; text-align: center;
+  line-height: 1.5; transition: all .2s;
+}
+.lvl-btn:hover  { border-color: var(--accent); color: var(--accent); }
+.lvl-btn.active { background: rgba(201,123,255,.1); border-color: var(--accent); color: var(--accent); box-shadow: var(--glow); }
+.lvl-btn.solved { border-color: var(--green); color: var(--green); }
+.lvl-icon { font-size: .95rem; display: block; margin-bottom: 2px; }
+.input-group { display: flex; flex-direction: column; gap: 7px; }
+.input-label-row { display: flex; justify-content: space-between; font-size: .58rem; }
+.input-label-row span:first-child { color: var(--muted); }
+.input-label-row span:last-child  { color: var(--accent); font-size: .52rem; }
+.input-wrap { display: flex; align-items: center; gap: 8px; }
+input[type=number] {
+  -webkit-appearance: none; width: 100%; height: 38px;
+  background: var(--surface2); border: 1px solid rgba(201,123,255,.28);
+  border-radius: 4px; color: var(--accent); font-family: 'Orbitron', monospace;
+  font-size: .92rem; font-weight: 700; text-align: center; outline: none;
+  transition: border-color .2s, box-shadow .2s; padding: 0 8px;
+}
+input[type=number]:focus { border-color: var(--accent); box-shadow: var(--glow); }
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
+.input-unit { font-size: .58rem; color: var(--muted); white-space: nowrap; }
+.input-range-hint { font-size: .52rem; color: rgba(201,123,255,.4); }
+.input-error  { font-size: .52rem; color: var(--red); min-height: 14px; }
+input[type=range] {
+  width: 100%; height: 4px; accent-color: var(--accent); cursor: pointer;
+  background: var(--surface3); border-radius: 2px; border: none; outline: none;
+}
+.btn {
+  font-family: 'Orbitron', monospace; font-size: .58rem; letter-spacing: .1em;
+  padding: 10px 12px; border: none; cursor: pointer; border-radius: 4px;
+  transition: all .2s; text-transform: uppercase; width: 100%;
+}
+.btn-go {
+  background: linear-gradient(135deg, #c97bff, #6b00cc);
+  color: #fff; font-weight: 700; box-shadow: var(--glow);
+}
+.btn-go:hover { filter: brightness(1.12); transform: translateY(-1px); }
+.btn-go:disabled { opacity: .35; cursor: not-allowed; transform: none; }
+.btn-reset { background: transparent; color: var(--muted); border: 1px solid rgba(255,255,255,.1); }
+.btn-reset:hover { color: var(--text); border-color: rgba(255,255,255,.25); }
+.btn-show-ans {
+  background: rgba(0,229,255,.07); color: var(--accent2);
+  border: 1px solid rgba(0,229,255,.25);
+}
+.btn-show-ans:hover { background: rgba(0,229,255,.15); }
+.attempt-badge {
+  background: var(--surface2); border: 1px solid rgba(0,229,255,.25);
+  color: var(--accent2); padding: 2px 9px; border-radius: 20px;
+  font-size: .54rem; white-space: nowrap;
+}
+.canvas-area {
+  display: flex; flex-direction: column; position: relative;
+  background: var(--bg); overflow: hidden;
+}
+.obj-bar {
+  background: rgba(0,229,255,.03); border-bottom: 1px solid rgba(0,229,255,.08);
+  padding: 7px 16px; display: flex; align-items: center; gap: 12px;
+  font-size: .6rem; flex-wrap: wrap;
+}
+.obj-label { color: var(--accent2); font-weight: 700; letter-spacing: .1em; white-space: nowrap; }
+.obj-text { color: var(--text); flex: 1; line-height: 1.5; font-size: .58rem; }
+.vel-bar {
+  background: rgba(5,7,15,.8); border-bottom: 1px solid rgba(201,123,255,.08);
+  padding: 5px 16px; display: flex; gap: 20px; align-items: center; font-size: .58rem;
+}
+.vel-item { display: flex; gap: 6px; align-items: center; }
+.vel-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.vel-lbl  { color: var(--muted); }
+.vel-val  { font-family: 'Orbitron', monospace; font-size: .65rem; font-weight: 700; }
+.vel-sep  { color: var(--muted); }
+.vel-rel  { margin-left: auto; color: var(--accent4); font-family: 'Orbitron', monospace; font-size: .65rem; }
+#gameCanvas { flex: 1; display: block; }
+.phase-banner {
+  position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+  font-family: 'Orbitron', monospace; font-size: .7rem; font-weight: 700;
+  padding: 6px 24px; border-radius: 20px; letter-spacing: .12em;
+  pointer-events: none; opacity: 0; transition: opacity .4s;
+  border: 1px solid;
+}
+.phase-banner.show { opacity: 1; }
+.phase-banner.overtaking { background: rgba(255,225,53,.1); border-color: var(--accent4); color: var(--accent4); }
+.phase-banner.success    { background: rgba(0,255,136,.1);  border-color: var(--green);   color: var(--green); animation: glow-pulse .6s ease-in-out 3; }
+.phase-banner.fail       { background: rgba(255,51,85,.1);  border-color: var(--red);     color: var(--red); }
+@keyframes glow-pulse {
+  0%,100% { box-shadow: none; }
+  50%      { box-shadow: 0 0 24px rgba(0,255,136,.4); }
+}
+.sidebar-right {
+  background: var(--surface);
+  border-left: 1px solid rgba(201,123,255,.1);
+  display: flex; flex-direction: column; overflow-y: auto;
+}
+.status-box {
+  border-radius: 6px; padding: 9px; text-align: center;
+  font-family: 'Orbitron', monospace; font-size: .6rem; font-weight: 700;
+  letter-spacing: .1em; border: 1px solid; transition: all .3s;
+}
+.status-idle { background: rgba(255,255,255,.02); border-color: rgba(255,255,255,.07); color: var(--muted); }
+.status-ok   { background: rgba(0,255,136,.07);   border-color: rgba(0,255,136,.3);   color: var(--green); }
+.status-fail { background: rgba(255,51,85,.07);   border-color: rgba(255,51,85,.3);   color: var(--red); }
+.status-warn { background: rgba(255,225,53,.06);  border-color: rgba(255,225,53,.3);  color: var(--accent4); }
+.status-fast { background: rgba(0,229,255,.06);   border-color: rgba(0,229,255,.3);   color: var(--accent2); }
+.solution-steps { display: flex; flex-direction: column; gap: 0; }
+.sol-step {
+  border-bottom: 1px solid rgba(255,255,255,.04); padding: 8px 0;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.sol-step:last-child { border-bottom: none; }
+.sol-step-head {
+  font-family: 'Orbitron', monospace; font-size: .5rem; color: var(--accent);
+  letter-spacing: .1em; text-transform: uppercase;
+}
+.sol-step-eq   { font-size: .62rem; color: var(--muted); line-height: 1.8; }
+.sol-step-res  {
+  font-family: 'Orbitron', monospace; font-size: .72rem; font-weight: 700;
+  color: var(--accent2); margin-top: 2px;
+}
+.sol-step-res.good { color: var(--green); }
+.sol-step-res.bad  { color: var(--red); }
+.sol-step-res.warn { color: var(--accent4); }
+.answer-check {
+  border-radius: 6px; padding: 10px 12px;
+  border: 1px solid rgba(201,123,255,.18);
+  background: rgba(201,123,255,.03);
+  display: flex; flex-direction: column; gap: 7px;
+}
+.ac-row { display: flex; justify-content: space-between; align-items: center; font-size: .6rem; }
+.ac-lbl { color: var(--muted); }
+.ac-val { font-family: 'Orbitron', monospace; font-size: .68rem; font-weight: 700; }
+.ac-val.correct { color: var(--green); }
+.ac-val.yours   { color: var(--accent); }
+.ac-verdict {
+  margin-top: 3px; padding: 6px 8px; border-radius: 4px; font-size: .58rem;
+  font-family: 'Orbitron', monospace; letter-spacing: .08em; text-align: center; font-weight: 700;
+}
+.ac-verdict.pass { background: rgba(0,255,136,.09); color: var(--green); border: 1px solid rgba(0,255,136,.3); }
+.ac-verdict.fail { background: rgba(255,51,85,.07);  color: var(--red);   border: 1px solid rgba(255,51,85,.25); }
+.ac-verdict.idle { background: rgba(255,255,255,.02); color: var(--muted); border: 1px solid rgba(255,255,255,.07); }
+.ac-verdict.warn { background: rgba(255,225,53,.07); color: var(--accent4); border: 1px solid rgba(255,225,53,.25); }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.stat-box { background: var(--surface2); border: 1px solid rgba(201,123,255,.09); border-radius: 4px; padding: 7px; text-align: center; }
+.stat-val { font-family: 'Orbitron', monospace; font-size: .75rem; color: var(--accent3); font-weight: 700; }
+.stat-lbl { font-size: .46rem; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-top: 2px; }
+.ref-box {
+  font-size: .6rem; line-height: 2.2; color: var(--muted);
+  background: var(--surface2); border-radius: 6px; padding: 10px 12px;
+}
+.ref-box .ref-eq { color: var(--accent); }
+.ref-box .ref-sep { border-top: 1px solid rgba(255,255,255,.05); margin: 6px 0; }
+.feedback-overlay {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; background: rgba(5,7,15,.88); z-index: 50;
+  opacity: 0; pointer-events: none; transition: opacity .3s; backdrop-filter: blur(6px);
+}
+.feedback-overlay.visible { opacity: 1; pointer-events: all; }
+.feedback-card {
+  background: var(--surface); border: 1px solid rgba(201,123,255,.2);
+  border-radius: 12px; padding: 28px; max-width: 520px; width: 92%;
+  text-align: center; box-shadow: 0 0 60px rgba(201,123,255,.06);
+  max-height: 85vh; overflow-y: auto;
+}
+.feedback-card.success { border-color: var(--green);   box-shadow: 0 0 60px rgba(0,255,136,.1); }
+.feedback-card.fail    { border-color: var(--red);     box-shadow: 0 0 60px rgba(255,51,85,.1); }
+.feedback-card.warn    { border-color: var(--accent4); box-shadow: 0 0 60px rgba(255,225,53,.1); }
+.fb-icon  { font-size: 2.8rem; margin-bottom: 8px; }
+.fb-title { font-family: 'Orbitron', monospace; font-size: 1.2rem; font-weight: 900; margin-bottom: 6px; }
+.success .fb-title { color: var(--green); }
+.fail    .fb-title { color: var(--red); }
+.warn    .fb-title { color: var(--accent4); }
+.fb-msg  { font-size: .66rem; color: var(--muted); line-height: 1.8; margin-bottom: 12px; }
+.fb-solution {
+  background: rgba(0,229,255,.04); border: 1px solid rgba(0,229,255,.15);
+  border-radius: 8px; padding: 12px 14px; font-size: .62rem;
+  margin-bottom: 14px; text-align: left; line-height: 2;
+}
+.fb-solution .fb-step { margin-bottom: 3px; color: var(--muted); }
+.fb-solution .fb-step strong { color: var(--accent2); }
+.fb-solution .fb-step .fval { color: var(--accent4); font-family: 'Orbitron', monospace; font-size: .65rem; }
+.fb-solution .fb-answer { color: var(--green); font-family: 'Orbitron', monospace; font-size: .72rem; margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(0,229,255,.15); }
+.fb-btns { display: flex; gap: 8px; }
+.fb-btn {
+  flex: 1; font-family: 'Orbitron', monospace; font-size: .56rem;
+  padding: 10px; border: none; border-radius: 4px; cursor: pointer;
+  text-transform: uppercase; letter-spacing: .1em; transition: all .2s;
+}
+.fb-retry { background: rgba(255,51,85,.12); color: var(--red); border: 1px solid rgba(255,51,85,.3); }
+.fb-retry:hover { background: rgba(255,51,85,.22); }
+.fb-next  { background: linear-gradient(135deg, var(--green), #00cc66); color: var(--bg); font-weight: 700; }
+.fb-next:hover { filter: brightness(1.1); }
+.particle {
+  position: fixed; pointer-events: none; border-radius: 50%;
+  animation: pfly 1s ease-out forwards;
+}
+@keyframes pfly {
+  from { opacity:1; transform:translate(0,0) scale(1); }
+  to   { opacity:0; transform:translate(var(--dx),var(--dy)) scale(0); }
+}
+ 
+/* ══════════════════════════════════════════════
+   Responsive changes start
+══════════════════════════════════════════════ */
+.mobile-action-bar { display: none; }
+ 
+@media (max-width: 1024px) {
+  .app { grid-template-columns: 220px 1fr 240px; }
+  .sidebar, .sidebar-right { font-size: .9em; }
+  .panel { padding: 10px 12px; }
+}
+ 
+@media (max-width: 768px) {
+  html, body { height: 100%; overflow: hidden; }
+  header { padding: 8px 12px; gap: 10px; }
+  .logo { font-size: clamp(.82rem, 4vw, 1.1rem); }
+  .header-tag { font-size: .46rem; padding: 2px 8px; }
+  .back-btn { font-size: .46rem; padding: 4px 8px; }
+  .app {
+    display: flex; flex-direction: column;
+    height: calc(100vh - 48px);
+    overflow-y: auto; overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    grid-template-columns: unset; grid-template-rows: unset;
+  }
+  .canvas-area {
+    order: 1; flex: 0 0 auto;
+    height: 46vw; min-height: 210px; max-height: 320px;
+    overflow: hidden; position: sticky; top: 0; z-index: 10;
+  }
+  #gameCanvas { min-height: unset; display: block; }
+  .obj-bar { padding: 4px 10px; font-size: .54rem; gap: 7px; flex-wrap: nowrap; }
+  .obj-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+  .attempt-badge { font-size: .48rem; padding: 2px 6px; flex-shrink: 0; }
+  .vel-bar { padding: 4px 10px; gap: 10px; font-size: .52rem; }
+  .vel-val, .vel-rel { font-size: .58rem; }
+  .sidebar {
+    order: 2; flex: 0 0 auto; max-height: none;
+    overflow-y: visible; overflow-x: hidden;
+    border-right: none; border-top: 1px solid rgba(201,123,255,.1);
+    display: flex; flex-direction: column;
+  }
+  .sidebar-right {
+    order: 3; flex: 0 0 auto;
+    border-left: none; border-top: 1px solid rgba(201,123,255,.1);
+    overflow-y: visible; padding-bottom: 76px;
+  }
+  .sidebar .mobile-hide-btns { display: none !important; }
+  .mobile-action-bar {
+    display: flex; position: fixed;
+    bottom: 0; left: 0; right: 0; z-index: 99;
+    gap: 7px; padding: 9px 12px;
+    padding-bottom: calc(9px + env(safe-area-inset-bottom, 0px));
+    background: linear-gradient(to top, rgba(5,7,15,.98) 65%, transparent);
+    border-top: 1px solid rgba(201,123,255,.14);
+  }
+  .mobile-action-bar .btn { flex: 1; min-height: 44px; font-size: .58rem; padding: 10px 6px; }
+  .mobile-action-bar .btn-go { flex: 2; min-height: 46px; font-size: .62rem; }
+  .panel { padding: 10px 12px; }
+  .panel-title { font-size: .48rem; }
+  .lvl-btn { min-height: 40px; padding: 6px 3px; font-size: .5rem; }
+  .jee-problem { font-size: .58rem; padding: 9px; line-height: 1.85; }
+  .jee-problem .prob-title { font-size: .52rem; }
+  .jee-problem .prob-val { font-size: .62rem; }
+  .diff-chip { min-height: 36px; font-size: .46rem; padding: 6px 3px; }
+  input[type=number] { height: 42px; font-size: .88rem; }
+  input[type=range] { height: 6px; }
+  .stats-grid { grid-template-columns: repeat(4, 1fr); }
+  .stat-val { font-size: .66rem; }
+  .stat-lbl { font-size: .42rem; }
+  .stat-box { padding: 5px; overflow: hidden; }
+  .phase-banner { font-size: .6rem; padding: 5px 16px; }
+  .feedback-card { padding: 18px 14px; }
+  .fb-title { font-size: 1rem; }
+  .fb-icon { font-size: 2.4rem; margin-bottom: 6px; }
+  .fb-msg { font-size: .6rem; }
+  .fb-solution { font-size: .58rem; padding: 10px 12px; }
+  #fc-card { padding: 22px 18px 18px; }
+  #fc-card .fc-title { font-size: clamp(1.1rem, 4.5vw, 1.6rem); }
+  #fc-card .fc-body { font-size: .7rem; }
+  #fc-card .fc-list li { font-size: .68rem; }
+  #fc-start-btn { font-size: .72rem; padding: 12px 18px; }
+  #fc-reopen-btn { min-height: 40px; font-size: .5rem; }
+}
+ 
+@media (max-width: 480px) {
+  .app { height: calc(100vh - 44px); }
+  header { padding: 7px 10px; }
+  .logo { font-size: clamp(.76rem, 3.8vw, 1rem); }
+  .header-tag { display: none; }
+  .canvas-area { height: 50vw; min-height: 185px; }
+  .vel-rel { display: none; }
+  .vel-bar { gap: 8px; }
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+  .mobile-action-bar { padding: 8px 10px; padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px)); gap: 6px; }
+  .mobile-action-bar .btn { font-size: .54rem; min-height: 42px; }
+  .jee-problem { font-size: .54rem; }
+  .panel-title { font-size: .44rem; }
+  #fc-card { padding: 18px 14px 16px; border-radius: 10px; }
+  #fc-card .fc-title { font-size: clamp(1rem, 4.5vw, 1.4rem); }
+}
+/* ══════════════════════════════════════════════
+   Responsive changes end
+══════════════════════════════════════════════ */
+ 
+/* FLASHCARD CSS */
+#fc-overlay {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(2, 4, 12, 0.97);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px; opacity: 1; transition: opacity 0.4s ease; overflow-y: auto;
+}
+#fc-overlay.fc-hidden { opacity: 0; pointer-events: none; }
+#fc-card {
+  background: var(--surface); border: 1px solid rgba(201,123,255,0.25);
+  border-radius: 16px; padding: 36px 40px 32px; max-width: 600px; width: 100%;
+  box-shadow: 0 0 60px rgba(201,123,255,0.1); animation: fc-rise 0.5s ease both;
+}
+@keyframes fc-rise {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+#fc-card .fc-badge {
+  display: inline-block; font-family: 'Orbitron', monospace;
+  font-size: 0.52rem; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--accent); border: 1px solid rgba(201,123,255,0.35);
+  border-radius: 20px; padding: 3px 13px; margin-bottom: 14px;
+}
+#fc-card .fc-title {
+  font-family: 'Orbitron', monospace; font-size: clamp(1.3rem,4vw,1.9rem);
+  font-weight: 900; background: linear-gradient(135deg, var(--accent), var(--accent2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  filter: drop-shadow(0 0 16px rgba(201,123,255,0.45)); margin-bottom: 20px; line-height: 1.2;
+}
+#fc-card .fc-divider { height: 1px; background: linear-gradient(90deg, rgba(201,123,255,0.3), transparent); margin: 14px 0; }
+#fc-card .fc-section-label {
+  font-family: 'Orbitron', monospace; font-size: 0.56rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--accent2); margin-bottom: 8px; margin-top: 16px;
+}
+#fc-card .fc-body { font-size: 0.76rem; color: var(--text); line-height: 1.9; opacity: 0.9; }
+#fc-card .fc-body strong { color: var(--accent); }
+#fc-card .fc-list { list-style: none; padding: 0; margin: 6px 0 0 0; display: flex; flex-direction: column; gap: 5px; }
+#fc-card .fc-list li { display: flex; align-items: flex-start; gap: 8px; font-size: 0.73rem; color: var(--text); opacity: 0.88; line-height: 1.6; }
+#fc-card .fc-list li::before { content: '▸'; color: var(--accent); flex-shrink: 0; margin-top: 1px; font-size: 0.63rem; }
+#fc-card .fc-formula-box { background: var(--surface2); border: 1px solid rgba(201,123,255,0.18); border-radius: 8px; padding: 12px 16px; margin-top: 8px; display: flex; flex-direction: column; gap: 6px; }
+#fc-card .fc-formula-row { display: flex; align-items: center; gap: 10px; font-size: 0.7rem; }
+#fc-card .fc-formula-row .fc-step-label { font-family: 'Orbitron', monospace; font-size: 0.5rem; color: var(--accent2); letter-spacing: 0.1em; white-space: nowrap; min-width: 52px; }
+#fc-card .fc-formula-row .fc-eq { font-family: 'Orbitron', monospace; font-size: 0.68rem; color: var(--accent); font-weight: 700; }
+#fc-card .fc-insight-box { background: rgba(201,123,255,0.04); border: 1px solid rgba(201,123,255,0.15); border-left: 3px solid var(--accent); border-radius: 6px; padding: 12px 14px; margin-top: 8px; font-size: 0.72rem; color: var(--text); line-height: 1.75; opacity: 0.9; }
+#fc-card .fc-insight-box .fc-insight-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 3px; }
+#fc-card .fc-insight-box .fc-insight-row:last-child { margin-bottom: 0; }
+#fc-card .fc-insight-box .fc-dot { color: var(--accent3); flex-shrink: 0; font-size: 0.68rem; margin-top: 2px; }
+#fc-card .fc-action-line { margin-top: 20px; padding: 12px 16px; background: rgba(127,255,0,0.05); border: 1px solid rgba(127,255,0,0.2); border-radius: 8px; font-family: 'Orbitron', monospace; font-size: 0.62rem; font-weight: 700; color: var(--accent3); letter-spacing: 0.06em; text-align: center; }
+#fc-start-btn { display: block; width: 100%; margin-top: 24px; font-family: 'Orbitron', monospace; font-size: 0.78rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; padding: 14px 24px; background: linear-gradient(135deg, var(--accent), #7700cc); color: #fff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 0 24px rgba(201,123,255,0.4); transition: filter 0.2s, transform 0.2s; }
+#fc-start-btn:hover  { filter: brightness(1.14); transform: translateY(-2px); }
+#fc-start-btn:active { transform: translateY(0); }
+#fc-reopen-btn { display: block; width: 100%; font-family: 'Orbitron', monospace; font-size: 0.54rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; padding: 8px 10px; background: transparent; color: var(--muted); border: 1px solid rgba(201,123,255,0.15); border-radius: 5px; cursor: pointer; transition: all 0.2s; text-align: center; margin-top: 2px; }
+#fc-reopen-btn:hover { color: var(--accent); border-color: rgba(201,123,255,0.45); box-shadow: 0 0 10px rgba(201,123,255,0.12); }
+</style>
+</head>
+<body>
+ 
+<div id="fc-overlay">
+  <div id="fc-card">
+    <div class="fc-badge">📐 Concept Card</div>
+    <div class="fc-title">Relative Motion (Overtake)</div>
+    <p class="fc-body">Relative motion helps us understand how <strong>one object moves with respect to another</strong>.</p>
+    <p class="fc-body" style="margin-top:8px;">In overtaking:</p>
+    <ul class="fc-list" style="margin-top:6px;">
+      <li>One vehicle is <strong>faster</strong></li>
+      <li>The other is <strong>slower</strong></li>
+      <li>We observe motion from one vehicle's point of view</li>
+    </ul>
+    <div class="fc-divider"></div>
+    <div class="fc-section-label">Key Idea</div>
+    <p class="fc-body">👉 What really matters is <strong>relative velocity</strong> — it tells how quickly the gap between two objects changes.</p>
+    <div class="fc-section-label" style="margin-top:16px;">Formulas</div>
+    <div class="fc-formula-box">
+      <div class="fc-formula-row"><span class="fc-step-label">REL. VEL.</span><span class="fc-eq">v_rel = v₁ − v₂</span></div>
+      <div class="fc-formula-row"><span class="fc-step-label">TIME</span><span class="fc-eq">t = Distance / v_rel</span></div>
+      <div class="fc-formula-row"><span class="fc-step-label">DISTANCE</span><span class="fc-eq">d = v × t</span></div>
+    </div>
+    <div class="fc-divider"></div>
+    <div class="fc-section-label">Understanding</div>
+    <div class="fc-insight-box">
+      <div class="fc-insight-row"><span class="fc-dot">◆</span><span>If v₁ &gt; v₂ → <strong>overtaking happens</strong></span></div>
+      <div class="fc-insight-row"><span class="fc-dot">◆</span><span>If v₁ = v₂ → <strong>no overtaking</strong></span></div>
+      <div class="fc-insight-row"><span class="fc-dot">◆</span><span>Higher relative velocity → <strong>faster overtake</strong></span></div>
+    </div>
+    <div class="fc-section-label" style="margin-top:16px;">Insight</div>
+    <p class="fc-body">👉 Always <strong>convert speeds into the same units</strong> before solving.</p>
+    <div class="fc-action-line">🚗 Try calculating the answer before running the simulation.</div>
+    <button id="fc-start-btn" onclick="fcStartLab()">⚡ Start Lab</button>
+  </div>
+</div>
+ 
+<div class="intro-screen" id="introScreen">
+  <div class="intro-logo">⚡ JEE PHYSICS SIMULATOR</div>
+  <div class="intro-badge">Relative Motion · Overtake Challenge</div>
+  <div class="intro-desc">
+    Solve a <strong>JEE-style relative motion problem</strong>.<br>
+    Enter your calculated answer → Watch the physics play out in real time.<br>
+    Three difficulty tiers. Five scenarios. No guessing allowed.
+  </div>
+  <div class="intro-formula">
+    <div><span class="f-step">Step 1 ▶</span> D = L_truck + L_car + safety gap</div>
+    <div><span class="f-step">Step 2 ▶</span> v_rel = D / t</div>
+    <div><span class="f-step">Step 3 ▶</span> v_car = v_truck + v_rel</div>
+    <div><span class="f-step">Unit  ▶</span> 1 km/h = 1/3.6 m/s</div>
+  </div>
+  <button class="btn-start" onclick="startGame()">⚡ START CHALLENGE →</button>
+</div>
+ 
+<header>
+  <a href="#" class="back-btn">← HOME</a>
+  <div class="logo">⚡OVERTAKE Challenge</div>
+  <div class="header-tag">Relative Motion</div>
+</header>
+ 
+<div class="app">
+  <div class="sidebar">
+    <div class="panel">
+      <div class="panel-title">Mission Select</div>
+      <div class="level-grid" id="levelGrid"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">📋 JEE Problem</div>
+      <div class="jee-problem" id="jeeProblem">
+        <div class="prob-title">Select a mission →</div>
+        <div class="prob-given">Problem loads here.</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Difficulty</div>
+      <div class="diff-row">
+        <button class="diff-chip easy"         id="diffEasy"   onclick="setDifficulty('easy')">Easy</button>
+        <button class="diff-chip medium active" id="diffMedium" onclick="setDifficulty('medium')">Medium</button>
+        <button class="diff-chip hard"          id="diffHard"   onclick="setDifficulty('hard')">Hard</button>
+      </div>
+      <div style="font-size:.5rem;color:var(--muted);margin-top:6px;text-align:center;" id="diffDesc">Tolerance ±5 km/h</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Your Answer</div>
+      <div class="input-group">
+        <div class="input-label-row">
+          <span>Minimum speed of car</span>
+          <span>km/h</span>
+        </div>
+        <div class="input-wrap">
+          <input type="number" id="speedInput" min="20" max="250" step="0.5" value="" placeholder="?">
+          <span class="input-unit">km/h</span>
+        </div>
+        <input type="range" id="speedSlider" min="20" max="250" step="1" value="80">
+        <div class="input-range-hint" id="inputHint">Range: 20 – 250 km/h</div>
+        <div class="input-error" id="speedError"></div>
+        <div class="mobile-hide-btns" style="display:flex;flex-direction:column;gap:5px;margin-top:4px;">
+          <button class="btn btn-go"       id="goBtn"      onclick="submitAnswer()">⚡ CHECK ANSWER</button>
+          <button class="btn btn-show-ans" id="showAnsBtn"  onclick="revealAnswer()">💡 SHOW SOLUTION</button>
+          <button class="btn btn-reset"                     onclick="resetRun()">↺ RESET</button>
+          <button id="fc-reopen-btn" onclick="fcShowCard()">📐 View Concept</button>
+        </div>
+        <div class="input-error" id="generalError"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Live Stats</div>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-val" id="statVr">—</div><div class="stat-lbl">v_rel (m/s)</div></div>
+        <div class="stat-box"><div class="stat-val" id="statD">—</div><div class="stat-lbl">Distance (m)</div></div>
+        <div class="stat-box"><div class="stat-val" id="statT">—</div><div class="stat-lbl">Time (s)</div></div>
+        <div class="stat-box"><div class="stat-val" id="statSpd">—</div><div class="stat-lbl">v_car (km/h)</div></div>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="canvas-area">
+    <div class="obj-bar">
+      <span class="obj-label">SCENARIO:</span>
+      <span class="obj-text" id="objText">Select a level to begin.</span>
+      <span class="attempt-badge" id="attemptBadge">ATTEMPTS: 0</span>
+    </div>
+    <div class="vel-bar">
+      <div class="vel-item"><div class="vel-dot" style="background:#00e5ff;"></div><span class="vel-lbl">Car</span><span class="vel-val" id="velCar" style="color:var(--accent2)">— km/h</span></div>
+      <div class="vel-sep">|</div>
+      <div class="vel-item"><div class="vel-dot" style="background:#ffe135;"></div><span class="vel-lbl">Truck</span><span class="vel-val" id="velTruck" style="color:var(--accent4)">— km/h</span></div>
+      <div class="vel-sep">|</div>
+      <div class="vel-rel" id="velRel">v_rel = — m/s</div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <div class="phase-banner" id="phaseBanner">OVERTAKING…</div>
+    <div class="feedback-overlay" id="feedbackOverlay">
+      <div class="feedback-card" id="feedbackCard">
+        <div class="fb-icon" id="fbIcon"></div>
+        <div class="fb-title" id="fbTitle"></div>
+        <div class="fb-msg" id="fbMsg"></div>
+        <div class="fb-solution" id="fbSolution"></div>
+        <div class="fb-btns">
+          <button class="fb-btn fb-retry" onclick="closeFeedback()">↺ TRY AGAIN</button>
+          <button class="fb-btn fb-next" id="fbNext" onclick="nextLevel()">NEXT LEVEL →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="sidebar-right">
+    <div class="panel">
+      <div class="panel-title">Verdict</div>
+      <div class="status-box status-idle" id="statusBox">AWAITING ANSWER</div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Step-by-Step Solution</div>
+      <div class="solution-steps" id="solutionSteps">
+        <div class="sol-step"><div class="sol-step-eq" style="color:var(--muted);font-size:.6rem">Submit your answer to see the full worked solution.</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Answer Check</div>
+      <div class="answer-check">
+        <div class="ac-row"><span class="ac-lbl">Correct Answer</span><span class="ac-val correct" id="acCorrect">— km/h</span></div>
+        <div class="ac-row"><span class="ac-lbl">Your Answer</span><span class="ac-val yours" id="acYours">— km/h</span></div>
+        <div class="ac-row"><span class="ac-lbl">Error</span><span class="ac-val" id="acError">—</span></div>
+        <div class="ac-row"><span class="ac-lbl">Tolerance</span><span class="ac-val" id="acTolerance" style="color:var(--muted)">± — km/h</span></div>
+        <div class="ac-verdict idle" id="acVerdict">AWAITING SUBMISSION</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Physics Reference</div>
+      <div class="ref-box">
+        <div><span class="ref-eq">D = L₁ + L₂ + gap</span></div>
+        <div><span class="ref-eq">v_rel = D / t</span></div>
+        <div><span class="ref-eq">v_car = v_truck + v_rel</span></div>
+        <div class="ref-sep"></div>
+        <div><span class="ref-eq">1 km/h = 1/3.6 m/s</span></div>
+        <div><span class="ref-eq">1 m/s = 3.6 km/h</span></div>
+        <div class="ref-sep"></div>
+        <div style="font-size:.55rem;">Oncoming: closing v_rel = v₁ + v₂</div>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<!-- Sticky mobile action bar -->
+<div class="mobile-action-bar">
+  <button class="btn btn-go"       id="goBtnMobile"      onclick="submitAnswer()">⚡ CHECK ANSWER</button>
+  <button class="btn btn-show-ans" id="showAnsBtnMobile"  onclick="revealAnswer()">💡 SOLUTION</button>
+  <button class="btn btn-reset"                           onclick="resetRun()">↺ RESET</button>
+</div>
+ 
+<script>
+'use strict';
+const LEVELS = [
+  { id:1, name:'Country Road', icon:'🚛', diffTag:'EASY', scenario:'Overtake a slow truck on a quiet country road.', objective:'A truck moves at 36 km/h. Find the minimum car speed to overtake within 10 seconds.', aheadName:'Truck', aheadSpeed:36, aheadLength:20, carLength:5, safetyBuffer:5, time:10, oncomingSpeed:0, oncomingDist:0, minSpeed:0, maxSpeed:0 },
+  { id:2, name:'City Bus', icon:'🚌', diffTag:'EASY', scenario:'Overtake a city bus on a busy main road.', objective:'A bus is moving at 54 km/h. Overtake within 8 seconds. Bus=15m, Car=4m, safety=6m.', aheadName:'City Bus', aheadSpeed:54, aheadLength:15, carLength:4, safetyBuffer:6, time:8, oncomingSpeed:0, oncomingDist:0 },
+  { id:3, name:'Highway Convoy', icon:'🏎️', diffTag:'MEDIUM', scenario:'Overtake a fast highway truck — precision needed!', objective:'Truck at 72 km/h. You must complete overtake in 6s. Truck=18m, Car=4m, safety=8m.', aheadName:'Highway Truck', aheadSpeed:72, aheadLength:18, carLength:4, safetyBuffer:8, time:6, oncomingSpeed:0, oncomingDist:0 },
+  { id:4, name:'Danger Zone', icon:'⚠️', diffTag:'HARD', scenario:'Oncoming vehicle approaching! Race against closing speed.', objective:'Truck at 54 km/h. Oncoming car at 72 km/h, 300m away. Truck=15m, Car=4m, safety=5m. Find min speed to overtake before collision.', aheadName:'Truck', aheadSpeed:54, aheadLength:15, carLength:4, safetyBuffer:5, time:0, oncomingSpeed:72, oncomingDist:300 },
+  { id:5, name:'Train Pass', icon:'🚂', diffTag:'HARD', scenario:'A passenger train overtakes a freight train on parallel track.', objective:'Freight train at 36 km/h. Passenger train must overtake in 40s. Freight=200m, Passenger=120m, safety=10m.', aheadName:'Freight Train', aheadSpeed:36, aheadLength:200, carLength:120, safetyBuffer:10, time:40, oncomingSpeed:0, oncomingDist:0 },
+];
+const DIFFICULTY = {
+  easy:   { label:'EASY',   tolerance:8,   desc:'Tolerance ±8 km/h' },
+  medium: { label:'MEDIUM', tolerance:4,   desc:'Tolerance ±4 km/h' },
+  hard:   { label:'HARD',   tolerance:1.5, desc:'Tolerance ±1.5 km/h' },
+};
+let state = { currentLevel:0, solvedLevels:JSON.parse(localStorage.getItem('jee_otc_solved')||'[]'), attempts:0, difficulty:'medium', isAnimating:false, animFrame:null, lastResult:null, revealedAnswer:false, simTime:0, simDuration:0, carPx:0, truckPx:0, oncomingPx:0, scale:1, phase:'idle' };
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+/* Responsive changes start — dynamic canvas resize */
+function resizeCanvas() {
+  const area = canvas.parentElement;
+  const objBar = area.querySelector('.obj-bar');
+  const velBar = area.querySelector('.vel-bar');
+  const usedH = (objBar ? objBar.offsetHeight : 0) + (velBar && velBar.offsetHeight ? velBar.offsetHeight : 0);
+  canvas.width = area.clientWidth;
+  canvas.height = Math.max(area.clientHeight - usedH, 140);
+}
+/* Responsive changes end — dynamic canvas resize */
+window.addEventListener('resize', () => { resizeCanvas(); drawIdle(); });
+const toMs = v => v / 3.6;
+const toKmh = v => v * 3.6;
+function calcCorrect(level) {
+  const D = level.aheadLength + level.carLength + level.safetyBuffer;
+  const vt_ms = toMs(level.aheadSpeed);
+  let t, vrel_ms, vcar_ms, vcar_kmh;
+  if (level.oncomingSpeed > 0) {
+    const v_on = toMs(level.oncomingSpeed);
+    const od = level.oncomingDist;
+    vcar_ms = (od * vt_ms + D * v_on) / (od - D);
+    vrel_ms = vcar_ms - vt_ms;
+    t = D / vrel_ms;
+    vcar_kmh = toKmh(vcar_ms);
+  } else {
+    vrel_ms = D / level.time;
+    vcar_ms = vt_ms + vrel_ms;
+    t = level.time;
+    vcar_kmh = toKmh(vcar_ms);
+  }
+  return { D, vt_ms, vrel_ms, vcar_ms, vcar_kmh, t };
+}
+function validateAnswer(level, userKmh) {
+  const correct = calcCorrect(level);
+  const tolerance = DIFFICULTY[state.difficulty].tolerance;
+  const error = userKmh - correct.vcar_kmh;
+  const absErr = Math.abs(error);
+  const withinTol = absErr <= tolerance;
+  const tooSlow = userKmh <= level.aheadSpeed;
+  const vt_ms = toMs(level.aheadSpeed);
+  const vcar_ms = toMs(userKmh);
+  const vrel_ms = vcar_ms - vt_ms;
+  const D = correct.D;
+  const t_user = vrel_ms > 0 ? D / vrel_ms : Infinity;
+  let oncomingOk = true;
+  if (level.oncomingSpeed > 0) {
+    const v_on = toMs(level.oncomingSpeed);
+    const t_close = level.oncomingDist / (vcar_ms + v_on);
+    oncomingOk = t_user < t_close && vrel_ms > 0;
+  }
+  let verdict;
+  if (tooSlow) verdict = 'TOO_SLOW';
+  else if (userKmh > 250) verdict = 'UNREALISTIC';
+  else if (!oncomingOk) verdict = 'COLLISION';
+  else if (!withinTol && error < 0) verdict = 'BELOW';
+  else if (!withinTol && error > 0) verdict = 'ABOVE';
+  else if (withinTol) verdict = 'OPTIMAL';
+  return { correct, tolerance, error, absErr, withinTol, tooSlow, oncomingOk, verdict, vcar_ms, vt_ms, vrel_ms, t_user, D, success: withinTol && oncomingOk && !tooSlow };
+}
+function submitAnswer() {
+  if (state.isAnimating) return;
+  const input = document.getElementById('speedInput');
+  const err = document.getElementById('speedError');
+  err.textContent = '';
+  const v = parseFloat(input.value);
+  if (isNaN(v)) { err.textContent = '⚠ Enter a numeric speed'; return; }
+  if (v < 20) { err.textContent = '⚠ Minimum realistic speed is 20 km/h'; return; }
+  if (v > 250) { err.textContent = '⚠ Maximum realistic speed is 250 km/h'; return; }
+  const level = LEVELS[state.currentLevel];
+  if (v <= level.aheadSpeed) { err.textContent = `⚠ Speed must exceed ${level.aheadSpeed} km/h`; return; }
+  state.attempts++;
+  document.getElementById('attemptBadge').textContent = `ATTEMPTS: ${state.attempts}`;
+  document.getElementById('goBtn').disabled = true;
+  const result = validateAnswer(level, v);
+  state.lastResult = result;
+  updateRightPanel(result, v);
+  updateVelBar(v, level.aheadSpeed, result.vrel_ms);
+  runAnimation(result, level, v);
+}
+function revealAnswer() {
+  const level = LEVELS[state.currentLevel];
+  const correct = calcCorrect(level);
+  const rounded = Math.round(correct.vcar_kmh * 10) / 10;
+  document.getElementById('speedInput').value = rounded;
+  document.getElementById('speedSlider').value = Math.min(Math.round(rounded), 250);
+  updateVelBar(rounded, level.aheadSpeed, correct.vrel_ms);
+  const fakeResult = validateAnswer(level, rounded);
+  updateRightPanel(fakeResult, rounded);
+  buildSolutionSteps(fakeResult, level, rounded);
+  document.getElementById('generalError').textContent = `💡 Correct answer: ${rounded} km/h — now press CHECK ANSWER to simulate.`;
+  state.revealedAnswer = true;
+}
+function updateRightPanel(result, userKmh) {
+  const sb = document.getElementById('statusBox');
+  const msgs = { TOO_SLOW:['status-fail','TOO SLOW — CANNOT OVERTAKE'], UNREALISTIC:['status-fail','SPEED UNREALISTIC'], COLLISION:['status-fail','COLLISION WITH ONCOMING'], BELOW:['status-warn','SPEED TOO LOW — Increase it'], ABOVE:['status-fast','SPEED TOO HIGH — Not optimal'], OPTIMAL:['status-ok','✓ OPTIMAL SPEED — OVERTAKE SUCCESS'] };
+  const [cls, txt] = msgs[result.verdict] || ['status-idle','UNKNOWN'];
+  sb.className = 'status-box ' + cls; sb.textContent = txt;
+  document.getElementById('statVr').textContent = result.vrel_ms > 0 ? result.vrel_ms.toFixed(2) + ' m/s' : '—';
+  document.getElementById('statD').textContent = result.D.toFixed(1) + ' m';
+  document.getElementById('statT').textContent = isFinite(result.t_user) ? result.t_user.toFixed(2) + ' s' : '∞';
+  document.getElementById('statSpd').textContent = userKmh.toFixed(1) + ' km/h';
+  const corr = result.correct.vcar_kmh;
+  const errSign = result.error >= 0 ? '+' : '';
+  document.getElementById('acCorrect').textContent = corr.toFixed(1) + ' km/h';
+  document.getElementById('acYours').textContent = userKmh.toFixed(1) + ' km/h';
+  document.getElementById('acError').textContent = errSign + result.error.toFixed(1) + ' km/h';
+  document.getElementById('acError').style.color = result.withinTol ? 'var(--green)' : 'var(--red)';
+  document.getElementById('acTolerance').textContent = '± ' + result.tolerance + ' km/h';
+  const av = document.getElementById('acVerdict');
+  if (result.success) { av.className = 'ac-verdict pass'; av.textContent = '✓ CORRECT — WITHIN TOLERANCE'; }
+  else if (result.verdict === 'COLLISION') { av.className = 'ac-verdict fail'; av.textContent = '✗ COLLISION RISK'; }
+  else { av.className = 'ac-verdict fail'; av.textContent = '✗ INCORRECT — Adjust speed'; }
+  buildSolutionSteps(result, LEVELS[state.currentLevel], userKmh);
+}
+function buildSolutionSteps(result, level, userKmh) {
+  const c = result.correct;
+  const ss = document.getElementById('solutionSteps');
+  const steps = [];
+  steps.push({ head:'Step 1 — Total Distance', eq:`D = ${level.aheadLength} + ${level.carLength} + ${level.safetyBuffer}`, res:`D = ${c.D} m`, cls:'' });
+  if (level.oncomingSpeed === 0) {
+    steps.push({ head:'Step 2 — Time Constraint', eq:`t = ${level.time} s (given)`, res:`t = ${level.time} s`, cls:'' });
+    steps.push({ head:'Step 3 — Relative Speed', eq:`v_rel = D / t = ${c.D} / ${level.time}`, res:`v_rel = ${c.vrel_ms.toFixed(3)} m/s`, cls:'' });
+  } else {
+    steps.push({ head:'Step 2 — Oncoming Constraint', eq:`Closing speed condition applied`, res:`v_rel = ${c.vrel_ms.toFixed(3)} m/s`, cls:'' });
+  }
+  steps.push({ head:'Step 4 — Unit Conversion', eq:`v_truck = ${level.aheadSpeed} km/h = ${c.vt_ms.toFixed(3)} m/s`, res:`v_truck = ${c.vt_ms.toFixed(3)} m/s`, cls:'' });
+  steps.push({ head:'Step 5 — Car Speed', eq:`v_car = ${c.vt_ms.toFixed(3)} + ${c.vrel_ms.toFixed(3)} × 3.6`, res:`v_car = ${c.vcar_kmh.toFixed(2)} km/h`, cls:'good' });
+  steps.push({ head:'Step 6 — Your Answer', eq:`Your: ${userKmh.toFixed(1)} | Correct: ${c.vcar_kmh.toFixed(2)} | Error: ${result.error >= 0?'+':''}${result.error.toFixed(1)} km/h`, res:result.withinTol ? '✓ WITHIN TOLERANCE' : '✗ OUTSIDE TOLERANCE', cls:result.withinTol?'good':'bad' });
+  ss.innerHTML = steps.map(s => `<div class="sol-step"><div class="sol-step-head">${s.head}</div><div class="sol-step-eq">${s.eq}</div><div class="sol-step-res ${s.cls}">${s.res}</div></div>`).join('');
+}
+function updateVelBar(carKmh, truckKmh, vrel) {
+  document.getElementById('velCar').textContent = carKmh.toFixed(1) + ' km/h';
+  document.getElementById('velTruck').textContent = truckKmh.toFixed(0) + ' km/h';
+  document.getElementById('velRel').textContent = `v_rel = ${vrel > 0 ? vrel.toFixed(2) : '—'} m/s`;
+}
+function runAnimation(result, level, userKmh) {
+  if (state.animFrame) cancelAnimationFrame(state.animFrame);
+  const vcar_ms = result.vcar_ms, vtruck_ms = result.vt_ms, D = result.D, vrel_ms = result.vrel_ms;
+  const t_overtake = vrel_ms > 0 ? D / vrel_ms : 8;
+  const T_APPROACH = t_overtake * 0.8, T_CLEARANCE = t_overtake * 0.6;
+  const t_total_sim = T_APPROACH + t_overtake + T_CLEARANCE;
+  const TIME_SCALE = t_total_sim / 6.5;
+  const W = canvas.width, H = canvas.height;
+  const worldWidth_m = vtruck_ms * t_total_sim * 1.5 || 200;
+  const SCALE = (W * 0.9) / worldWidth_m;
+  const INITIAL_GAP_M = level.aheadLength + 4;
+  let truck_m = 0, car_m = -(INITIAL_GAP_M + level.carLength);
+  let onc_m = level.oncomingSpeed > 0 ? level.oncomingDist + level.aheadLength : 1e6;
+  let lastTime = null, simElapsed = 0, phase = 'approach', overtakeFlashTimer = 0;
+  function loop(wallTs) {
+    if (lastTime === null) lastTime = wallTs;
+    const dtReal = Math.min((wallTs - lastTime) / 1000, 0.1);
+    lastTime = wallTs;
+    const dt_sim = dtReal * TIME_SCALE;
+    simElapsed += dt_sim;
+    truck_m += vtruck_ms * dt_sim;
+    car_m += vcar_ms * dt_sim;
+    if (level.oncomingSpeed > 0) onc_m -= toMs(level.oncomingSpeed) * dt_sim;
+    const carFront = car_m + level.carLength, truckRear = truck_m, truckFront = truck_m + level.aheadLength;
+    if (phase === 'approach' && carFront >= truckRear - 0.3) { phase = 'overtaking'; overtakeFlashTimer = 0; }
+    if (phase === 'overtaking') { overtakeFlashTimer += dtReal; if (car_m >= truckFront + level.safetyBuffer) phase = 'done'; }
+    if (simElapsed >= t_total_sim + T_CLEARANCE * 0.4) phase = 'ended';
+    const truckScreenX = W * 0.42, camOffset_m = truck_m - truckScreenX / SCALE;
+    const truck_px = (truck_m - camOffset_m) * SCALE, car_px = (car_m - camOffset_m) * SCALE, onc_px = (onc_m - camOffset_m) * SCALE;
+    drawScene(truck_px, car_px, onc_px, phase, level, result, overtakeFlashTimer, SCALE, camOffset_m);
+    const banner = document.getElementById('phaseBanner');
+    if (phase === 'approach') { banner.className = 'phase-banner show overtaking'; banner.textContent = '🚗 APPROACHING…'; }
+    else if (phase === 'overtaking') { banner.className = 'phase-banner show overtaking'; banner.textContent = '⚡ OVERTAKING!'; }
+    else if (phase === 'done') { banner.className = 'phase-banner show success'; banner.textContent = '✓ OVERTAKE COMPLETE'; }
+    else if (phase === 'ended') {
+      banner.className = 'phase-banner';
+      state.isAnimating = false; state.animFrame = null;
+      document.getElementById('goBtn').disabled = false;
+      showFeedback(result, level, userKmh);
+      return;
+    }
+    state.animFrame = requestAnimationFrame(loop);
+  }
+  state.isAnimating = true;
+  state.animFrame = requestAnimationFrame(loop);
+}
+function drawScene(truckPx, carPx, oncPx, phase, level, result, overtakeFlashTimer, SCALE, camOffset_m) {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#05070f'); sky.addColorStop(1, '#090d1c');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  const roadTop = H * 0.38, roadBot = H * 0.82, roadH = roadBot - roadTop, laneH = roadH / 2;
+  const lane1_y = roadTop + laneH * 0.5, lane2_y = roadTop + laneH * 1.5;
+  const roadGrad = ctx.createLinearGradient(0, roadTop, 0, roadBot);
+  roadGrad.addColorStop(0, '#0d1225'); roadGrad.addColorStop(1, '#080d1a');
+  ctx.fillStyle = roadGrad; ctx.fillRect(0, roadTop, W, roadH);
+  ctx.strokeStyle = 'rgba(201,123,255,0.18)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, roadTop); ctx.lineTo(W, roadTop); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, roadBot); ctx.lineTo(W, roadBot); ctx.stroke();
+  ctx.setLineDash([24, 18]); ctx.strokeStyle = 'rgba(255,255,255,0.18)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, roadTop + laneH); ctx.lineTo(W, roadTop + laneH); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = 'rgba(255,255,255,0.05)'; ctx.lineWidth = 1;
+  for (let x = -60; x < W + 60; x += 80) { const ox = ((x + (truckPx * 0.05)) % W + W) % W; ctx.beginPath(); ctx.moveTo(ox, roadTop + 2); ctx.lineTo(ox, roadBot - 2); ctx.stroke(); }
+  drawRuler(W, roadTop, SCALE, camOffset_m);
+  const truckW = Math.max((SCALE || 1) * level.aheadLength, 60), truckH = laneH * 0.7;
+  const carW = Math.max((SCALE || 1) * level.carLength, 28), carH = laneH * 0.58;
+  if (phase === 'overtaking') {
+    const ramp = Math.min(overtakeFlashTimer, 1.0);
+    const pulse = 0.04 + 0.04 * Math.sin(overtakeFlashTimer * Math.PI * 2) * ramp;
+    const zoneX = Math.min(carPx, truckPx) - 16, zoneW = Math.abs(carPx - truckPx) + truckW + 32;
+    ctx.fillStyle = `rgba(255,225,53,${pulse})`; ctx.fillRect(zoneX, roadTop, zoneW, laneH * 2);
+    ctx.strokeStyle = `rgba(255,225,53,${pulse * 4})`; ctx.lineWidth = 1.5; ctx.setLineDash([6, 6]);
+    ctx.strokeRect(zoneX, roadTop, zoneW, laneH * 2); ctx.setLineDash([]);
+    ctx.fillStyle = `rgba(255,225,53,${0.55 + 0.45 * Math.sin(overtakeFlashTimer * Math.PI * 2) * ramp})`;
+    ctx.font = '700 11px Orbitron, monospace'; ctx.textAlign = 'center';
+    ctx.fillText('OVERTAKING', zoneX + zoneW / 2, roadTop + laneH - 4);
+  }
+  const phaseLabels = { approach:{text:'Phase 1: Approaching',color:'#00e5ff'}, overtaking:{text:'Phase 2: Overtaking',color:'#ffe135'}, done:{text:'Phase 3: Cleared — Safe!',color:'#00ff88'} };
+  if (phaseLabels[phase]) { ctx.fillStyle = phaseLabels[phase].color; ctx.font = '700 11px Orbitron, monospace'; ctx.textAlign = 'left'; ctx.fillText(phaseLabels[phase].text, 14, roadTop - 14); }
+  const carLaneY = (phase === 'approach') ? lane1_y : lane2_y;
+  drawVehicle(ctx, truckPx, lane1_y, truckW, truckH, '#ffe135', level.aheadName, level.aheadSpeed + ' km/h');
+  drawVehicle(ctx, carPx, carLaneY, carW, carH, '#00e5ff', 'Your Car', result ? (result.vcar_ms * 3.6).toFixed(0) + ' km/h' : '—');
+  if (level.oncomingSpeed > 0 && oncPx < W + 80) drawVehicle(ctx, oncPx, lane2_y, 50, truckH * 0.8, '#ff3355', 'ONCOMING', level.oncomingSpeed + ' km/h');
+  if (result) { drawArrow(ctx, truckPx, roadTop - 18, level.aheadSpeed, '#ffe135'); drawArrow(ctx, carPx, roadTop - 18, result.vcar_ms * 3.6, '#00e5ff'); }
+  if (phase === 'overtaking' && result && result.vrel_ms > 0) { ctx.fillStyle = 'rgba(255,225,53,0.85)'; ctx.font = '700 9px Space Mono, monospace'; ctx.textAlign = 'center'; ctx.fillText(`v_rel = ${result.vrel_ms.toFixed(2)} m/s`, (carPx + truckPx) / 2, lane1_y - truckH / 2 - 28); }
+  if (phase === 'done') { ctx.strokeStyle = 'rgba(0,255,136,0.35)'; ctx.lineWidth = 3; ctx.shadowBlur = 18; ctx.shadowColor = '#00ff88'; ctx.beginPath(); ctx.arc(carPx, lane2_y, 36, 0, Math.PI * 2); ctx.stroke(); ctx.shadowBlur = 0; }
+}
+function drawVehicle(ctx, cx, cy, w, h, color, label, speed) {
+  const x = cx - w / 2, y = cy - h / 2;
+  ctx.shadowBlur = 18; ctx.shadowColor = color;
+  const grad = ctx.createLinearGradient(x, y, x, y + h);
+  grad.addColorStop(0, color + '55'); grad.addColorStop(0.5, color + '22'); grad.addColorStop(1, color + '10');
+  ctx.fillStyle = grad; ctx.beginPath(); ctx.roundRect(x, y, w, h, 4); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke(); ctx.shadowBlur = 0;
+  ctx.fillStyle = color; ctx.font = '600 10px Space Mono, monospace'; ctx.textAlign = 'center';
+  ctx.fillText(label, cx, y - 14); ctx.fillStyle = color + 'bb'; ctx.font = '9px Space Mono, monospace'; ctx.fillText(speed, cx, y - 4);
+}
+function drawArrow(ctx, cx, y, speedKmh, color) {
+  const len = Math.min(speedKmh * 0.7, 120);
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 2; ctx.shadowBlur = 8; ctx.shadowColor = color;
+  ctx.beginPath(); ctx.moveTo(cx - len * 0.3, y); ctx.lineTo(cx + len * 0.7, y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx + len * 0.7, y); ctx.lineTo(cx + len * 0.7 - 7, y - 4); ctx.lineTo(cx + len * 0.7 - 7, y + 4); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0; ctx.font = '8px Orbitron, monospace'; ctx.textAlign = 'center'; ctx.fillText(speedKmh.toFixed(0), cx + len * 0.4, y - 6);
+}
+function drawRuler(W, roadTop, SCALE, camOffset_m) {
+  ctx.strokeStyle = 'rgba(0,229,255,0.12)'; ctx.lineWidth = 1;
+  for (let x = 0; x < W; x += 50) { ctx.beginPath(); ctx.moveTo(x, roadTop - 8); ctx.lineTo(x, roadTop); ctx.stroke(); }
+  if (SCALE && SCALE > 0 && camOffset_m !== undefined) {
+    ctx.fillStyle = 'rgba(0,229,255,0.35)'; ctx.font = '8px Space Mono, monospace'; ctx.textAlign = 'center';
+    for (let x = 0; x < W; x += 200) { ctx.fillText(Math.round(camOffset_m + x / SCALE) + 'm', x, roadTop - 11); }
+  }
+}
+function drawIdle() {
+  const W = canvas.width, H = canvas.height;
+  if (!W || !H) return;
+  ctx.clearRect(0, 0, W, H);
+  const sky = ctx.createLinearGradient(0, 0, 0, H);
+  sky.addColorStop(0, '#05070f'); sky.addColorStop(1, '#090d1c');
+  ctx.fillStyle = sky; ctx.fillRect(0, 0, W, H);
+  const roadTop = H * 0.38, roadBot = H * 0.82, roadH = roadBot - roadTop;
+  ctx.fillStyle = '#0d1225'; ctx.fillRect(0, roadTop, W, roadH);
+  ctx.strokeStyle = 'rgba(201,123,255,0.15)'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(0, roadTop); ctx.lineTo(W, roadTop); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(0, roadBot); ctx.lineTo(W, roadBot); ctx.stroke();
+  ctx.setLineDash([24, 18]); ctx.strokeStyle = 'rgba(255,255,255,0.12)'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, roadTop + roadH / 2); ctx.lineTo(W, roadTop + roadH / 2); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = 'rgba(201,123,255,0.18)'; ctx.font = '700 13px Orbitron, monospace'; ctx.textAlign = 'center';
+  ctx.fillText('⚡ Enter your answer and press CHECK ANSWER', W / 2, H * 0.12);
+}
+function showFeedback(result, level, userKmh) {
+  const overlay = document.getElementById('feedbackOverlay');
+  const card = document.getElementById('feedbackCard');
+  const c = result.correct;
+  const verdictData = { OPTIMAL:{icon:'🎯',title:'PERFECT ANSWER!',cls:'success'}, BELOW:{icon:'📉',title:'TOO SLOW',cls:'fail'}, ABOVE:{icon:'⚡',title:'TOO FAST',cls:'warn'}, TOO_SLOW:{icon:'🐢',title:'CANNOT OVERTAKE',cls:'fail'}, COLLISION:{icon:'💥',title:'COLLISION!',cls:'fail'}, UNREALISTIC:{icon:'🚫',title:'UNREALISTIC SPEED',cls:'fail'} };
+  const vd = verdictData[result.verdict] || {icon:'❓',title:'RESULT',cls:''};
+  document.getElementById('fbIcon').textContent = vd.icon;
+  document.getElementById('fbTitle').textContent = vd.title;
+  card.className = 'feedback-card ' + vd.cls;
+  const msgs = {
+    OPTIMAL:`Your answer of <strong>${userKmh.toFixed(1)} km/h</strong> is within ±${result.tolerance} km/h of the correct answer!`,
+    BELOW:`At <strong>${userKmh.toFixed(1)} km/h</strong>, the relative speed is insufficient for the required overtake time.`,
+    ABOVE:`At <strong>${userKmh.toFixed(1)} km/h</strong>, you overtake but it's more than ±${result.tolerance} km/h above optimal.`,
+    TOO_SLOW:`Speed (${userKmh.toFixed(1)} km/h) ≤ truck (${level.aheadSpeed} km/h). Relative speed = 0 → no overtake.`,
+    COLLISION:`At ${userKmh.toFixed(1)} km/h, overtake takes ${result.t_user.toFixed(1)}s but oncoming closes faster.`,
+    UNREALISTIC:`${userKmh} km/h exceeds limits. Try 20–250 km/h.`,
+  };
+  document.getElementById('fbMsg').innerHTML = msgs[result.verdict] || '';
+  document.getElementById('fbSolution').innerHTML = `
+    <div class="fb-step"><strong>Given:</strong> v_truck=${level.aheadSpeed}km/h, L_truck=${level.aheadLength}m, L_car=${level.carLength}m, gap=${level.safetyBuffer}m${level.oncomingSpeed>0?', v_oncoming='+level.oncomingSpeed+'km/h':', t='+level.time+'s'}</div>
+    <div class="fb-step"><strong>Step 1:</strong> D = ${c.D} m</div>
+    <div class="fb-step"><strong>Step 2:</strong> v_rel = ${c.D}/${c.t.toFixed(2)} = <span class="fval">${c.vrel_ms.toFixed(3)} m/s</span></div>
+    <div class="fb-step"><strong>Step 3:</strong> v_truck = ${c.vt_ms.toFixed(3)} m/s</div>
+    <div class="fb-step"><strong>Step 4:</strong> v_car = ${c.vt_ms.toFixed(3)}+${c.vrel_ms.toFixed(3)} = <span class="fval">${c.vcar_ms.toFixed(3)} m/s</span></div>
+    <div class="fb-answer">✓ v_car = ${c.vcar_kmh.toFixed(2)} km/h</div>
+    <div class="fb-step" style="margin-top:8px;color:${result.withinTol?'var(--green)':'var(--red)'}">Your: ${userKmh.toFixed(1)} km/h | Error: ${result.error>=0?'+':''}${result.error.toFixed(1)} km/h | Tolerance: ±${result.tolerance} km/h</div>`;
+  document.getElementById('fbNext').style.display = result.success ? 'block' : 'none';
+  if (result.success) { markSolved(); spawnParticles(); }
+  overlay.classList.add('visible');
+}
+function closeFeedback() {
+  document.getElementById('feedbackOverlay').classList.remove('visible');
+  document.getElementById('phaseBanner').className = 'phase-banner';
+  document.getElementById('goBtn').disabled = false;
+}
+function nextLevel() { closeFeedback(); if (state.currentLevel < LEVELS.length - 1) selectLevel(state.currentLevel + 1); }
+function buildLevelButtons() {
+  const grid = document.getElementById('levelGrid');
+  grid.innerHTML = '';
+  LEVELS.forEach((lvl, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'lvl-btn' + (i===state.currentLevel?' active':'') + (state.solvedLevels.includes(i)?' solved':'');
+    btn.innerHTML = `<span class="lvl-icon">${lvl.icon}</span>LVL ${lvl.id}<br>${lvl.name}`;
+    btn.onclick = () => selectLevel(i);
+    grid.appendChild(btn);
+  });
+}
+function updateLevelButtons() {
+  document.querySelectorAll('.lvl-btn').forEach((btn, i) => {
+    btn.className = 'lvl-btn' + (i===state.currentLevel?' active':'') + (state.solvedLevels.includes(i)?' solved':'');
+  });
+}
+function markSolved() {
+  if (!state.solvedLevels.includes(state.currentLevel)) {
+    state.solvedLevels.push(state.currentLevel);
+    localStorage.setItem('jee_otc_solved', JSON.stringify(state.solvedLevels));
+    updateLevelButtons();
+  }
+}
+function selectLevel(idx) {
+  if (state.animFrame) cancelAnimationFrame(state.animFrame);
+  state.isAnimating = false; state.currentLevel = idx; state.attempts = 0; state.lastResult = null; state.revealedAnswer = false;
+  closeFeedback();
+  const level = LEVELS[idx], c = calcCorrect(level);
+  const seed = Math.min(Math.round((level.aheadSpeed + c.vcar_kmh) / 2), 250);
+  document.getElementById('speedInput').value = '';
+  document.getElementById('speedSlider').value = seed;
+  document.getElementById('speedSlider').min = level.aheadSpeed + 1;
+  document.getElementById('speedError').textContent = '';
+  document.getElementById('generalError').textContent = '';
+  document.getElementById('inputHint').textContent = `Range: ${level.aheadSpeed+1} – 250 km/h`;
+  document.getElementById('attemptBadge').textContent = 'ATTEMPTS: 0';
+  document.getElementById('objText').textContent = level.objective;
+  document.getElementById('phaseBanner').className = 'phase-banner';
+  document.getElementById('statusBox').className = 'status-box status-idle';
+  document.getElementById('statusBox').textContent = 'AWAITING ANSWER';
+  document.getElementById('solutionSteps').innerHTML = '<div class="sol-step"><div class="sol-step-eq" style="color:var(--muted)">Submit your answer to see the full worked solution.</div></div>';
+  document.getElementById('acCorrect').textContent = '— km/h';
+  document.getElementById('acYours').textContent = '— km/h';
+  document.getElementById('acError').textContent = '—';
+  document.getElementById('acTolerance').textContent = '± — km/h';
+  document.getElementById('acVerdict').className = 'ac-verdict idle';
+  document.getElementById('acVerdict').textContent = 'AWAITING SUBMISSION';
+  ['statVr','statD','statT','statSpd'].forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('velCar').textContent = '— km/h';
+  document.getElementById('velTruck').textContent = level.aheadSpeed + ' km/h';
+  document.getElementById('velRel').textContent = 'v_rel = — m/s';
+  buildJeeProblem(level, c);
+  buildLevelButtons();
+  updateLevelButtons();
+  drawIdle();
+}
+function buildJeeProblem(level, c) {
+  const diff = state.difficulty;
+  let html = `<div class="prob-title">JEE Problem — ${level.diffTag}</div><div class="prob-given">`;
+  html += `A <strong>${level.aheadName}</strong> moves at <span class="prob-val">${level.aheadSpeed} km/h</span>.<br>`;
+  html += `Truck length = <span class="prob-val">${level.aheadLength} m</span><br>Car length = <span class="prob-val">${level.carLength} m</span><br>Safety gap = <span class="prob-val">${level.safetyBuffer} m</span><br>`;
+  if (level.oncomingSpeed > 0) { html += `Oncoming vehicle at <span class="prob-val">${level.oncomingSpeed} km/h</span>,<br><span class="prob-val">${level.oncomingDist} m</span> away.<br>`; }
+  else { html += `Overtake time = <span class="prob-val">${level.time} s</span><br>`; }
+  html += `</div><div class="prob-find">👉 Find minimum speed of car (km/h).</div>`;
+  if (diff === 'easy') html += `<div class="prob-hint">💡 Hint: D = sum of lengths + safety; v_rel = D/t</div>`;
+  else if (diff === 'medium') html += `<div class="prob-hint">💡 Hint: v_car = v_truck + v_rel</div>`;
+  document.getElementById('jeeProblem').innerHTML = html;
+}
+function setDifficulty(d) {
+  state.difficulty = d;
+  ['easy','medium','hard'].forEach(k => { document.getElementById('diff'+k.charAt(0).toUpperCase()+k.slice(1)).className = 'diff-chip '+k+(k===d?' active':''); });
+  document.getElementById('diffDesc').textContent = DIFFICULTY[d].desc;
+  buildJeeProblem(LEVELS[state.currentLevel], calcCorrect(LEVELS[state.currentLevel]));
+}
+function resetRun() {
+  if (state.animFrame) cancelAnimationFrame(state.animFrame);
+  state.isAnimating = false; state.lastResult = null;
+  closeFeedback();
+  document.getElementById('goBtn').disabled = false;
+  document.getElementById('speedError').textContent = '';
+  document.getElementById('generalError').textContent = '';
+  document.getElementById('statusBox').className = 'status-box status-idle';
+  document.getElementById('statusBox').textContent = 'AWAITING ANSWER';
+  document.getElementById('phaseBanner').className = 'phase-banner';
+  ['statVr','statD','statT','statSpd'].forEach(id => document.getElementById(id).textContent = '—');
+  drawIdle();
+}
+function spawnParticles() {
+  const colors = ['#c97bff','#00e5ff','#7fff00','#ffffff','#00ff88'];
+  const r = canvas.getBoundingClientRect();
+  const cx = r.left + r.width * 0.55, cy = r.top + r.height * 0.5;
+  for (let i = 0; i < 24; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    const ang = (i / 24) * Math.PI * 2, d = 55 + Math.random() * 110;
+    p.style.cssText = `left:${cx}px;top:${cy}px;width:${4+Math.random()*6}px;height:${4+Math.random()*6}px;background:${colors[i%colors.length]};--dx:${Math.cos(ang)*d}px;--dy:${Math.sin(ang)*d}px;position:fixed;z-index:300;`;
+    document.body.appendChild(p);
+    setTimeout(() => p.remove(), 1050);
+  }
+}
+document.getElementById('speedSlider').addEventListener('input', function() { document.getElementById('speedInput').value = this.value; });
+document.getElementById('speedInput').addEventListener('input', function() { const v = parseInt(this.value); if (!isNaN(v) && v >= 20 && v <= 250) document.getElementById('speedSlider').value = v; document.getElementById('speedError').textContent = ''; });
+document.getElementById('speedInput').addEventListener('keydown', e => { if (e.key === 'Enter') submitAnswer(); });
+function startGame() { document.getElementById('introScreen').classList.add('hidden'); init(); }
+function init() { resizeCanvas(); buildLevelButtons(); selectLevel(0); }
+function fcShowCard() { document.getElementById('fc-overlay').classList.remove('fc-hidden'); }
+function fcHideCard() { document.getElementById('fc-overlay').classList.add('fc-hidden'); }
+function fcStartLab() {
+  fcHideCard();
+  const introScreen = document.getElementById('introScreen');
+  if (introScreen && !introScreen.classList.contains('hidden')) { introScreen.classList.add('hidden'); init(); }
+}
+window.addEventListener('DOMContentLoaded', function () {
+  fcShowCard();
+  var visited = localStorage.getItem('jee_otc_v2');
+  if (visited) { var introScreen = document.getElementById('introScreen'); if (introScreen) introScreen.classList.add('hidden'); init(); }
+  else { localStorage.setItem('jee_otc_v2', '1'); }
+  // Sync mobile bar disabled state
+  var pairs = [['goBtn','goBtnMobile'],['showAnsBtn','showAnsBtnMobile']];
+  pairs.forEach(function(p) {
+    var src = document.getElementById(p[0]), dst = document.getElementById(p[1]);
+    if (!src || !dst) return;
+    new MutationObserver(function() { dst.disabled = src.disabled; }).observe(src, { attributes:true, attributeFilter:['disabled'] });
+  });
+}, { once: true });
+</script>
+</body>
+</html>

@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pulley Power – JEE Physics Simulator</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   ROOT — Dark Space Lab Aesthetic (Matches rest of project)
+   ============================================================ */
+:root {
+  --bg: #050a12;
+  --surface: #0a1628;
+  --surface2: #0f1f3d;
+  --border: rgba(0,229,255,0.15);
+  --accent: #00e5ff;    /* Cyan */
+  --accent2: #ff6b35;   /* Orange */
+  --danger: #ff3366;    /* Red for Tension/Weight */
+  --warn: #ffe135;      /* Yellow */
+  --success: #00ff88;   /* Green */
+  --text: #e0f0ff;
+  --muted: #4a6080;
+  --glow: 0 0 20px rgba(0,229,255,0.4);
+}
+ 
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth; overflow-x:hidden;}
+/* Responsive changes start */
+/* Prevent horizontal scroll on all screen sizes */
+html, body { max-width: 100%; overflow-x: hidden; }
+/* Improve touch targets */
+canvas { touch-action: none; }
+/* Responsive changes end */
+body{background:var(--bg);color:var(--text);font-family:'Space Mono',monospace;min-height:100vh;overflow:hidden;}
+ 
+/* ============================================================
+   Responsive changes start
+   ============================================================ */
+ 
+/* ── HEADER ── */
+header{position:sticky;top:0;z-index:100;background:rgba(5,10,18,0.94); backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;padding:10px 20px;gap:16px;}
+.logo{font-family:'Orbitron',monospace;font-size:clamp(.9rem,2.5vw,1.35rem);font-weight:900;
+  background:linear-gradient(135deg, #ffd166, #e6901a); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;}
+.back-btn {font-family:'Orbitron',monospace;font-size:.52rem;color:var(--muted);text-decoration:none;letter-spacing:.1em;border:1px solid rgba(255,255,255,.08);padding:5px 10px;border-radius:4px;transition:all .2s;}
+.back-btn:hover {color:var(--warn);border-color:var(--warn);}
+ 
+/* ── APP LAYOUT ── */
+.app{display:grid;grid-template-columns:260px 1fr 280px;height:calc(100vh - 52px);position:relative;z-index:5;}
+ 
+/* ── SIDEBARS ── */
+.sidebar, .sidebar-right{background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:0;overflow-y:auto;}
+.sidebar-right{border-right:none;border-left:1px solid var(--border);}
+.panel{padding:14px;border-bottom:1px solid rgba(255,255,255,0.04);}
+.panel-title{font-family:'Orbitron',monospace;font-size:.55rem;letter-spacing:.2em;
+  color:var(--warn);text-transform:uppercase;
+  padding-bottom:8px;border-bottom:1px solid rgba(255,209,102,.15);margin-bottom:12px;}
+ 
+/* Level buttons */
+.level-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
+.lvl-btn{background:var(--surface2);border:1px solid rgba(255,209,102,.15);
+  color:var(--text);font-family:'Space Mono',monospace;font-size:.55rem;
+  padding:8px 4px;cursor:pointer;border-radius:4px;text-align:center;transition:all .2s;}
+.lvl-btn:hover{border-color:var(--warn);color:var(--warn);}
+.lvl-btn.active{background:rgba(255,209,102,.1);border-color:var(--warn);color:var(--warn);box-shadow:0 0 15px rgba(255,209,102,.2);}
+ 
+/* Info rows */
+.info-rows{display:flex;flex-direction:column;gap:8px;}
+.info-row{display:flex;justify-content:space-between;align-items:center;
+  font-size:.65rem;padding:4px 0;border-bottom:1px dashed rgba(255,255,255,.05);}
+.info-row:last-child{border-bottom:none;}
+.info-lbl{color:var(--muted);}
+.info-val{font-weight:700;color:var(--accent);font-family:'Orbitron',monospace;}
+ 
+/* Input */
+input[type=number]{width:100%;height:38px;
+  background:var(--surface2);border:1px solid rgba(255,209,102,.3);border-radius:4px;
+  color:var(--warn);font-family:'Orbitron',monospace;font-size:1rem;font-weight:700;
+  text-align:center;outline:none;padding:0 8px;transition:all .2s;}
+input[type=number]:focus{border-color:var(--warn);box-shadow:0 0 12px rgba(255,209,102,.3);}
+.ctrl-group{display:flex;flex-direction:column;gap:6px;margin-bottom:12px;}
+.ctrl-label{display:flex;justify-content:space-between;font-size:.6rem;color:var(--muted);font-weight:700;}
+ 
+/* Buttons */
+.btn{font-family:'Orbitron',monospace;font-size:.65rem;font-weight:700;letter-spacing:.1em;
+  padding:12px;border:none;cursor:pointer;border-radius:4px;transition:all .2s;width:100%;}
+.btn-lift{background:linear-gradient(135deg, #ffd166, #e6901a);color:#050a12;box-shadow:0 0 15px rgba(255,209,102,.3);}
+.btn-lift:hover{filter:brightness(1.15);}
+.btn-lift:disabled{opacity:.4;cursor:not-allowed;}
+.btn-reset{background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.1);margin-top:8px;}
+.btn-reset:hover{background:rgba(255,255,255,.05);color:var(--text);}
+ 
+/* ── CANVAS AREA ── */
+.canvas-area{display:flex;flex-direction:column;position:relative;background:var(--bg);overflow:hidden;}
+.obj-bar{background:rgba(0,229,255,.03);border-bottom:1px solid rgba(0,229,255,.08);
+  padding:8px 16px;display:flex;align-items:center;gap:14px;font-size:.6rem;}
+.obj-label{color:var(--warn);font-weight:700;text-transform:uppercase;font-family:'Orbitron',monospace;}
+.obj-text{color:var(--text);flex:1;}
+#gameCanvas{flex:1;display:block;}
+ 
+/* Result Pill */
+.result-pill{display:none;padding:8px 16px;border-radius:4px;font-family:'Orbitron',monospace;
+  font-size:.65rem;font-weight:700;text-align:center;border:1px solid;margin:12px 20px 0;}
+.result-pill.success{background:rgba(0,255,136,.1);border-color:var(--success);color:var(--success);display:block;}
+.result-pill.fail   {background:rgba(255,51,102,.1);border-color:var(--danger);color:var(--danger);display:block;}
+ 
+/* ── RIGHT SIDEBAR ── */
+.calc-block{background:var(--surface2);border-radius:6px;padding:12px;
+  border:1px solid rgba(255,255,255,.05);font-size:.65rem;line-height:2.2;}
+.calc-row{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid rgba(255,255,255,0.05);}
+.calc-eq{color:var(--muted);}
+.calc-res{font-weight:700;color:var(--accent);font-family:'Orbitron',monospace;}
+ 
+.ref-box {font-size:.6rem;line-height:2.2;color:var(--muted);background:var(--surface2);border-radius:6px;padding:10px 12px;}
+.ref-box .ref-eq {color:var(--warn);}
+ 
+/* ── EDUCATIONAL OVERLAY ── */
+.feedback-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:rgba(5,10,18,0.85);z-index:50;opacity:0;pointer-events:none;transition:opacity .3s;backdrop-filter:blur(4px);}
+.feedback-overlay.visible{opacity:1;pointer-events:all;}
+.feedback-card{background:var(--surface);border:1px solid var(--success);
+  border-radius:12px;padding:32px;max-width:500px;width:90%;
+  box-shadow:0 0 60px rgba(0,255,136,.1);text-align:center;}
+.fb-title{font-family:'Orbitron',monospace;font-size:1.4rem;font-weight:900;margin-bottom:12px;color:var(--success);}
+.fb-edu{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.15);border-radius:8px;
+  padding:16px;font-size:.65rem;color:var(--text);line-height:2;margin-bottom:20px;text-align:left;}
+.fb-edu strong{color:var(--accent);}
+.fb-btns{display:flex;gap:12px;}
+ 
+/* ── TABLET: 1024px ── */
+@media (max-width: 1024px) {
+  .app {
+    grid-template-columns: 220px 1fr 240px;
+  }
+  .sidebar, .sidebar-right {
+    font-size: 0.9em;
+  }
+}
+ 
+/* ── TABLET: 900px ── */
+@media (max-width: 900px) {
+  body { overflow: auto; }
+ 
+  .app {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto auto;
+    height: auto;
+  }
+ 
+  /* Stack order on tablet/mobile: Canvas → Controls → Analysis
+     Canvas goes FIRST so the simulation is immediately visible when
+     the user applies a force — no scrolling needed to see it. */
+  .canvas-area    { order: 1; min-height: 420px; }
+  .sidebar        { order: 2; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .sidebar-right  { order: 3; border-left: none; border-top: 1px solid var(--border); }
+ 
+  /* Level buttons – 4-column grid on tablet */
+  .level-grid { grid-template-columns: repeat(4, 1fr); }
+ 
+  /* Horizontal info rows on tablet */
+  .info-rows {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+ 
+  /* Canvas fills its container */
+  #gameCanvas { width: 100%; min-height: 420px; display: block; }
+ 
+  /* Right sidebar arranged in a 2-col grid of panels */
+  .sidebar-right { display: grid; grid-template-columns: 1fr 1fr; }
+  .sidebar-right .panel { border-bottom: none; border-right: 1px solid var(--border); }
+  .sidebar-right .panel:last-child { border-right: none; }
+}
+ 
+/* ── MOBILE: 768px ── */
+@media (max-width: 768px) {
+  header { padding: 8px 12px; gap: 10px; }
+  .logo  { font-size: clamp(.75rem, 4vw, 1.1rem); }
+  .back-btn { font-size: .48rem; padding: 4px 8px; }
+ 
+  .app { gap: 0; }
+ 
+  .panel { padding: 12px; }
+  .panel-title { font-size: .5rem; letter-spacing: .15em; }
+ 
+  /* Level buttons – 2 columns on mobile */
+  .level-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .lvl-btn { font-size: .5rem; padding: 10px 4px; min-height: 44px; }
+ 
+  /* Info rows – single column */
+  .info-rows { grid-template-columns: 1fr; }
+  .info-row  { font-size: .6rem; }
+ 
+  /* Controls */
+  .ctrl-label { font-size: .58rem; }
+  input[type=number] { height: 44px; font-size: .9rem; }
+ 
+  /* Buttons – full width, min 44px height */
+  .btn { min-height: 44px; font-size: .6rem; padding: 12px 8px; }
+  #fc-reopen-btn { min-height: 44px; }
+ 
+  /* Canvas */
+  .canvas-area { min-height: 360px; }
+  #gameCanvas  { min-height: 360px; }
+ 
+  /* Objective bar wraps on small screens */
+  .obj-bar  { flex-wrap: wrap; gap: 6px; padding: 8px 12px; font-size: .58rem; }
+  .obj-text { font-size: .58rem; }
+ 
+  /* Right sidebar – single column */
+  .sidebar-right { grid-template-columns: 1fr; }
+  .sidebar-right .panel { border-right: none; border-bottom: 1px solid rgba(255,255,255,.04); }
+ 
+  /* Calc and ref boxes */
+  .calc-block { font-size: .6rem; line-height: 2; }
+  .ref-box    { font-size: .58rem; line-height: 2; }
+ 
+  /* Result pill */
+  .result-pill { margin: 8px 12px 0; font-size: .58rem; }
+ 
+  /* Feedback overlay card */
+  .feedback-card { padding: 20px 16px; }
+  .fb-title { font-size: 1.1rem; }
+  .fb-edu   { font-size: .6rem; line-height: 1.8; }
+  .fb-btns  { flex-direction: column; gap: 8px; }
+  .fb-btns .btn { min-height: 44px; }
+ 
+  /* Flashcard */
+  #fc-card { padding: 24px 20px; }
+  .fc-title { font-size: clamp(.9rem, 5vw, 1.2rem); }
+  .fc-body  { font-size: .68rem; }
+  .fc-formula-row { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .fc-formula-desc { text-align: left; }
+  #fc-start-btn { min-height: 44px; font-size: .65rem; }
+}
+ 
+/* ── Responsive changes start: Floating "Watch Simulation" button ── */
+#watch-btn {
+  display: none; /* hidden on desktop */
+}
+ 
+@media (max-width: 900px) {
+  /* Floating pill button — visible only on mobile/tablet */
+  #watch-btn {
+    display: block;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    background: linear-gradient(135deg, #ffd166, #e6901a);
+    color: #050a12;
+    font-family: 'Orbitron', monospace;
+    font-size: .6rem;
+    font-weight: 700;
+    letter-spacing: .1em;
+    border: none;
+    border-radius: 24px;
+    padding: 12px 24px;
+    min-height: 44px;
+    cursor: pointer;
+    box-shadow: 0 4px 24px rgba(255,209,102,.45);
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .25s ease, transform .25s ease;
+  }
+  /* The button becomes visible via JS when user scrolls past the canvas */
+  #watch-btn.visible {
+    opacity: 1;
+    pointer-events: all;
+  }
+}
+/* ── Responsive changes end ── */
+ 
+/* ── SMALL MOBILE: 480px ── */
+@media (max-width: 480px) {
+  header { padding: 6px 10px; }
+  .logo  { font-size: clamp(.7rem, 5vw, 1rem); }
+ 
+  .level-grid { grid-template-columns: 1fr 1fr; }
+  .lvl-btn    { font-size: .48rem; padding: 8px 2px; }
+ 
+  .canvas-area { min-height: 300px; }
+  #gameCanvas  { min-height: 300px; }
+ 
+  .panel { padding: 10px; }
+ 
+  input[type=number] { font-size: .85rem; }
+  .btn   { font-size: .55rem; letter-spacing: .06em; }
+ 
+  .obj-bar { padding: 6px 10px; }
+  .obj-label, .obj-text { font-size: .52rem; }
+ 
+  .calc-row   { font-size: .58rem; flex-wrap: wrap; gap: 4px; }
+  .calc-res   { font-size: .6rem; }
+ 
+  .fb-title   { font-size: 1rem; }
+  .fb-edu     { font-size: .58rem; }
+ 
+  #fc-card { padding: 18px 14px; }
+  .fc-badge { font-size: .42rem; }
+  .fc-sec-head { font-size: .48rem; }
+  .fc-body  { font-size: .65rem; }
+  .fc-formula-eq { font-size: .6rem; }
+}
+/* ============================================================
+   Responsive changes end
+   ============================================================ */
+ 
+/* FLASHCARD START */
+#fc-overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(5,10,18,0.97);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  animation:fc-in .5s ease both;
+}
+#fc-overlay.fc-out{ animation:fc-out .35s ease forwards; pointer-events:none; }
+@keyframes fc-in  { from{opacity:0} to{opacity:1} }
+@keyframes fc-out { from{opacity:1} to{opacity:0} }
+ 
+#fc-card{
+  background:var(--surface);
+  border:1px solid rgba(255,209,102,0.28);
+  border-radius:14px;
+  padding:36px 40px;
+  max-width:620px;width:100%;
+  max-height:92vh;overflow-y:auto;
+  box-shadow:0 0 60px rgba(255,209,102,0.08),0 0 0 1px rgba(255,255,255,0.04);
+  animation:fc-up .45s ease both;
+}
+@keyframes fc-up{ from{opacity:0;transform:translateY(26px)} to{opacity:1;transform:translateY(0)} }
+ 
+.fc-badge{
+  display:inline-block;
+  font-family:'Orbitron',monospace;font-size:.48rem;letter-spacing:.28em;text-transform:uppercase;
+  color:var(--warn);background:rgba(255,209,102,.1);
+  border:1px solid rgba(255,209,102,.22);border-radius:20px;
+  padding:3px 12px;margin-bottom:14px;
+}
+.fc-title{
+  font-family:'Orbitron',monospace;font-size:clamp(1.05rem,3vw,1.5rem);font-weight:900;
+  color:var(--warn);margin-bottom:20px;line-height:1.2;
+}
+.fc-sec{ margin-bottom:16px; }
+.fc-sec-head{
+  font-family:'Orbitron',monospace;font-size:.54rem;letter-spacing:.22em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:7px;
+  padding-bottom:5px;border-bottom:1px solid rgba(0,229,255,.14);
+}
+.fc-body{ font-size:.72rem;color:var(--text);line-height:1.9; }
+.fc-body strong{ color:var(--warn); }
+.fc-body em{ color:var(--accent);font-style:normal; }
+ 
+.fc-formula-box{
+  background:var(--surface2);border:1px solid rgba(255,209,102,.18);
+  border-radius:8px;padding:14px 16px;margin:8px 0;
+}
+.fc-formula-row{
+  display:flex;justify-content:space-between;align-items:center;
+  font-size:.68rem;padding:4px 0;border-bottom:1px solid rgba(255,255,255,.05);gap:12px;
+}
+.fc-formula-row:last-child{ border-bottom:none; }
+.fc-formula-eq{ font-family:'Orbitron',monospace;font-weight:700;color:var(--warn);white-space:nowrap; }
+.fc-formula-desc{ color:var(--muted);font-size:.62rem;text-align:right; }
+ 
+.fc-bullets{ list-style:none;padding:0;margin:6px 0;display:flex;flex-direction:column;gap:5px; }
+.fc-bullets li{
+  font-size:.70rem;color:var(--text);line-height:1.65;
+  padding-left:16px;position:relative;
+}
+.fc-bullets li::before{ content:'→';position:absolute;left:0;color:var(--warn);font-weight:700; }
+ 
+.fc-insight{
+  background:rgba(0,229,255,.05);border-left:3px solid var(--accent);
+  border-radius:0 6px 6px 0;padding:10px 14px;
+  font-size:.68rem;color:var(--text);line-height:1.75;margin:14px 0;
+}
+.fc-insight strong{ color:var(--accent); }
+ 
+.fc-action{
+  background:rgba(255,209,102,.06);border:1px dashed rgba(255,209,102,.28);
+  border-radius:8px;padding:10px 14px;
+  font-size:.68rem;color:var(--warn);line-height:1.7;margin-top:14px;
+}
+ 
+#fc-start-btn{
+  font-family:'Orbitron',monospace;font-size:.72rem;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;
+  padding:13px 28px;width:100%;margin-top:22px;
+  background:linear-gradient(135deg,#ffd166,#e6901a);color:#050a12;
+  border:none;border-radius:6px;cursor:pointer;
+  box-shadow:0 0 20px rgba(255,209,102,.35);transition:all .2s;
+}
+#fc-start-btn:hover{ filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 0 30px rgba(255,209,102,.5); }
+#fc-start-btn:active{ transform:translateY(0); }
+ 
+#fc-reopen-btn{
+  font-family:'Orbitron',monospace;font-size:.52rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;
+  padding:8px 12px;width:100%;margin-top:8px;
+  background:transparent;color:var(--warn);
+  border:1px solid rgba(255,209,102,.3);border-radius:4px;
+  cursor:pointer;transition:all .2s;
+}
+#fc-reopen-btn:hover{
+  background:rgba(255,209,102,.08);border-color:var(--warn);
+  box-shadow:0 0 12px rgba(255,209,102,.2);
+}
+/* FLASHCARD END */
+</style>
+</head>
+<body>
+ 
+<!-- FLASHCARD START -->
+<div id="fc-overlay" role="dialog" aria-modal="true" aria-labelledby="fc-heading">
+  <div id="fc-card">
+ 
+    <div class="fc-badge">📚 Concept Card</div>
+    <h1 class="fc-title" id="fc-heading">Pulley System<br>(Mechanical Advantage)</h1>
+ 
+    <div class="fc-sec">
+      <div class="fc-sec-head">What is a Pulley?</div>
+      <div class="fc-body">
+        A pulley is a <strong>simple machine</strong> used to reduce the effort needed to lift a load.
+        It works by distributing force through ropes.
+      </div>
+    </div>
+ 
+    <div class="fc-sec">
+      <div class="fc-sec-head">Key Idea</div>
+      <div class="fc-body">
+        <strong>👉 More supporting ropes → less effort required</strong><br>
+        Each rope shares part of the load equally.
+      </div>
+    </div>
+ 
+    <div class="fc-sec">
+      <div class="fc-sec-head">Formulas</div>
+      <div class="fc-formula-box">
+        <div class="fc-formula-row">
+          <span class="fc-formula-eq">MA = Load / Effort</span>
+          <span class="fc-formula-desc">Mechanical Advantage</span>
+        </div>
+        <div class="fc-formula-row">
+          <span class="fc-formula-eq">E = W / n</span>
+          <span class="fc-formula-desc">Ideal pulley — n = supporting ropes</span>
+        </div>
+        <div class="fc-formula-row">
+          <span class="fc-formula-eq">W = m × g</span>
+          <span class="fc-formula-desc">Weight of load in Newtons</span>
+        </div>
+      </div>
+    </div>
+ 
+    <div class="fc-sec">
+      <div class="fc-sec-head">Understanding</div>
+      <ul class="fc-bullets">
+        <li>More pulleys → more supporting ropes</li>
+        <li>More ropes → less effort needed</li>
+        <li>Work is conserved — you pull more distance, but with less force</li>
+      </ul>
+    </div>
+ 
+    <div class="fc-insight">
+      <strong>👉 Insight:</strong> You don't reduce the total <em>work</em> done —
+      you only reduce the <em>force</em> needed. The trade-off is pulling a longer rope.
+    </div>
+ 
+    <div class="fc-action">
+      💡 <strong>Try predicting</strong> how much effort is needed before running the simulation.<br>
+      Use <em>E = W / n</em> and compare with the diagram's result.
+    </div>
+ 
+    <button id="fc-start-btn">⚙️ Start Lab →</button>
+ 
+  </div>
+</div>
+<!-- FLASHCARD END -->
+ 
+<!-- Responsive changes start: Floating "Watch Simulation" button for mobile -->
+<button id="watch-btn" onclick="document.querySelector('.canvas-area').scrollIntoView({behavior:'smooth',block:'start'})" aria-label="Scroll to simulation">
+  ▲ Watch Simulation
+</button>
+<!-- Responsive changes end -->
+ 
+<header>
+  <a href="index.html" class="back-btn">← HOME</a>
+  <div class="logo">⚡ PULLEY POWER CHALLENGE</div>
+  <div class="back-btn" style="border-color:var(--warn);color:var(--warn)">Simple Machines</div>
+</header>
+ 
+<div class="app">
+  <div class="sidebar">
+    <div class="panel">
+      <div class="panel-title">System Config</div>
+      <div class="level-grid" id="levelGrid"></div>
+      <!-- FLASHCARD START -->
+      <button id="fc-reopen-btn">📚 View Concept</button>
+      <!-- FLASHCARD END -->
+    </div>
+    <div class="panel">
+      <div class="panel-title">Variables</div>
+      <div class="info-rows">
+        <div class="info-row"><span class="info-lbl">Mass (m)</span><span class="info-val" id="infoMass" style="color:#e0f0ff">—</span></div>
+        <div class="info-row"><span class="info-lbl">Gravity (g)</span><span class="info-val" id="infoGrav">—</span></div>
+        <div class="info-row"><span class="info-lbl">Supporting Ropes (n)</span><span class="info-val" id="infoPulleys" style="color:var(--success)">—</span></div>
+        <div class="info-row"><span class="info-lbl">Load Weight (W)</span><span class="info-val" id="infoWeight" style="color:var(--danger)">—</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Experiment</div>
+      <div class="ctrl-group">
+        <label class="ctrl-label" for="forceInput">Applied Effort (E)</label>
+        <input type="number" id="forceInput" min="0.1" step="0.1" placeholder="Newtons (N)">
+      </div>
+      <button class="btn btn-lift" id="liftBtn" onclick="applyForce()">⚡ APPLY FORCE</button>
+      <button class="btn btn-reset" onclick="resetLevel()">↺ RESET DIAGRAM</button>
+    </div>
+  </div>
+ 
+  <div class="canvas-area">
+    <div class="obj-bar">
+      <span class="obj-label">OBJECTIVE:</span>
+      <span class="obj-text" id="objText">Calculate the exact effort required to lift the mass.</span>
+    </div>
+    
+    <canvas id="gameCanvas"></canvas>
+    
+    <div class="result-pill" id="resultPill"></div>
+ 
+    <div class="feedback-overlay" id="feedbackOverlay">
+      <div class="feedback-card" id="feedbackCard">
+        <div class="fb-title" id="fbTitle"></div>
+        <div class="fb-edu" id="fbEdu"></div>
+        <div class="fb-btns">
+          <button class="btn btn-reset" onclick="closeFeedback()">Review Diagram</button>
+          <button class="btn btn-lift" id="fbNext" onclick="nextLevel()">Next Concept →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+ 
+  <div class="sidebar-right">
+    <div class="panel">
+      <div class="panel-title">Analysis & Calculations</div>
+      <div class="calc-block" id="calcBlock">
+        <div class="calc-row"><span class="calc-eq">Apply force to begin analysis.</span></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Physics Reference</div>
+      <div class="ref-box">
+        <div><span class="ref-eq">Weight (W) = m × g</span></div>
+        <div><span class="ref-eq">Mech. Advantage (MA) = n</span></div>
+        <div style="border-top:1px solid rgba(255,255,255,.05); margin:6px 0;"></div>
+        <div><span class="ref-eq">Required Effort (E) = W / MA</span></div>
+        <div style="border-top:1px solid rgba(255,255,255,.05); margin:6px 0;"></div>
+        <div style="color:var(--accent)"><strong>Virtual Work Theorem:</strong></div>
+        <div>Distance pulled = n × Load dist.</div>
+      </div>
+    </div>
+  </div>
+</div>
+ 
+<script>
+'use strict';
+ 
+// ============================================================
+// EDUCATIONAL DATA SET
+// ============================================================
+const LEVELS = [
+  { id:1, name:'Fixed Pulley', n:1, mass:10, g:9.8,
+    obj:'1 fixed pulley changes direction, but provides no mechanical advantage.' },
+  { id:2, name:'Movable Pulley', n:2, mass:25, g:9.8,
+    obj:'1 fixed, 1 movable. The load is supported by 2 rope segments.' },
+  { id:3, name:'Block & Tackle (3)', n:3, mass:60, g:9.8,
+    obj:'2 fixed, 1 movable. Anchor is at the bottom block. 3 supporting ropes.' },
+  { id:4, name:'Block & Tackle (4)', n:4, mass:120, g:9.8,
+    obj:'2 fixed, 2 movable. 4 supporting ropes share the total weight equally.' },
+  { id:5, name:'Heavy Duty (5)', n:5, mass:200, g:9.8,
+    obj:'Complex system. Anchor at bottom block. Calculate E = W / 5.' },
+];
+ 
+let state = {
+  currentLevel: 0,
+  isAnimating: false,
+  animFrame: null,
+  loadY: 0, // Current travel
+  targetTravel: 0 // Target travel
+};
+ 
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+ 
+/* Responsive changes start */
+function resizeCanvas(){
+  const a = canvas.parentElement;
+  const isMobile = window.innerWidth <= 900;
+  canvas.width = a.clientWidth;
+  // On mobile the canvas-area has no fixed height, so derive from viewport
+  if (isMobile) {
+    // Use a 4:3-ish aspect ratio capped to a sensible range
+    const minH = window.innerWidth <= 480 ? 300 : 360;
+    canvas.height = Math.max(Math.round(canvas.width * 0.75), minH);
+    // Also explicitly set CSS height so flex layout doesn't collapse it
+    canvas.style.height = canvas.height + 'px';
+  } else {
+    canvas.style.height = '';
+    canvas.height = Math.max(a.clientHeight - 42, 400);
+  }
+  idleDraw();
+}
+window.addEventListener('resize', resizeCanvas);
+/* Responsive changes end */
+ 
+// ============================================================
+// DRAWING ENGINE: JEE DIAGRAM PROCEDURAL GENERATOR
+// ============================================================
+function idleDraw(){ if(!state.isAnimating) drawScene(); }
+ 
+function drawScene(){
+  if(!canvas.width) return;
+  const W = canvas.width, H = canvas.height;
+  const lvl = LEVELS[state.currentLevel];
+  
+  ctx.clearRect(0,0,W,H);
+  
+  // 1. Draw Lab Blueprint Background Grid
+  ctx.strokeStyle = 'rgba(0, 229, 255, 0.05)';
+  ctx.lineWidth = 1;
+  for(let x=0; x<W; x+=25){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+  for(let y=0; y<H; y+=25){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+ 
+  // Structural Constants
+  const n = lvl.n;
+  const S = 36; 
+  const R = S / 2; 
+  const CX = W * 0.45; 
+  
+  const Y_ceil = 40;
+  const Y_top_pulley = Y_ceil + 30;
+  
+  // Base Positions
+  const Y_bot_initial = Y_top_pulley + 220;
+  const Y_bot = Y_bot_initial - state.loadY;
+ 
+  // Ceiling Structure
+  ctx.strokeStyle = '#4a6080';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(CX - 150, Y_ceil); ctx.lineTo(CX + 150, Y_ceil); ctx.stroke();
+  ctx.lineWidth = 1;
+  for(let x = CX - 140; x < CX + 150; x+=10) {
+    ctx.beginPath(); ctx.moveTo(x, Y_ceil); ctx.lineTo(x+10, Y_ceil-10); ctx.stroke();
+  }
+ 
+  // Calculate Rope X coords
+  const ropeX = [];
+  for(let i = 0; i <= n; i++) ropeX.push(CX + (i - n/2) * S);
+  
+  const anchorTop = (n % 2 === 0);
+  let loadForcesX = [];
+ 
+  // ========================================
+  // RENDER ROPES AND VECTORS
+  // ========================================
+  ctx.strokeStyle = '#8b9bb4';
+  ctx.lineWidth = 2;
+ 
+  let effortY_end = 0;
+ 
+  for(let i = 0; i <= n; i++) {
+    let yStart, yEnd;
+    
+    if (i === 0) {
+      // Anchor Segment
+      yStart = anchorTop ? Y_ceil : Y_top_pulley;
+      yEnd = anchorTop ? Y_bot : Y_bot - R - 15;
+      
+      ctx.fillStyle = '#00e5ff';
+      if(anchorTop) {
+        ctx.beginPath(); ctx.arc(ropeX[i], Y_ceil, 4, 0, Math.PI*2); ctx.fill();
+      } else {
+        ctx.beginPath(); ctx.arc(ropeX[i], Y_bot - R - 15, 4, 0, Math.PI*2); ctx.fill();
+      }
+      loadForcesX.push(ropeX[i]);
+    } else if (i === n) {
+      // Effort Segment
+      yStart = Y_top_pulley;
+      const effortTravel = state.loadY * n;
+      yEnd = Y_top_pulley + 100 + effortTravel;
+      effortY_end = yEnd;
+    } else {
+      // Internal Segments
+      yStart = Y_top_pulley;
+      yEnd = Y_bot;
+      loadForcesX.push(ropeX[i]);
+    }
+ 
+    // Draw Rope Line
+    ctx.beginPath(); ctx.moveTo(ropeX[i], yStart); ctx.lineTo(ropeX[i], yEnd); ctx.stroke();
+    
+    // Draw Upward Tension Vector (T) on supporting ropes
+    if (i < n) {
+      drawVector(ropeX[i], yEnd - 45, ropeX[i], yEnd - 80, '#ff3366', 'T');
+    }
+  }
+ 
+  // ========================================
+  // RENDER PULLEYS
+  // ========================================
+  for(let i = 0; i < n; i++) {
+    const isTop = ((n - 1 - i) % 2 === 0);
+    const pcx = (ropeX[i] + ropeX[i+1]) / 2;
+    
+    if (isTop) {
+      drawTextbookPulley(pcx, Y_top_pulley, R, true, Y_ceil);
+      ctx.strokeStyle = '#8b9bb4'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(pcx, Y_top_pulley, R, Math.PI, 0); ctx.stroke();
+    } else {
+      drawTextbookPulley(pcx, Y_bot, R, false, null);
+      ctx.strokeStyle = '#8b9bb4'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(pcx, Y_bot, R, 0, Math.PI); ctx.stroke();
+    }
+  }
+ 
+  // ========================================
+  // RENDER LOAD MASS
+  // ========================================
+  let sumX = 0;
+  loadForcesX.forEach(x => sumX += x);
+  const massCenterX = sumX / loadForcesX.length;
+  
+  if (n > 1) {
+    const minX = Math.min(...loadForcesX);
+    const maxX = Math.max(...loadForcesX);
+    ctx.strokeStyle = '#4a6080';
+    ctx.lineWidth = 6;
+    ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(minX, Y_bot); ctx.lineTo(maxX, Y_bot); ctx.stroke();
+    ctx.lineCap = 'butt';
+  }
+ 
+  drawMassBlock(massCenterX, Y_bot + 10, lvl);
+ 
+  // Draw Effort Vector at the final position
+  drawVector(ropeX[n], effortY_end - 10, ropeX[n], effortY_end + 35, '#00e5ff', 'E');
+ 
+  // ========================================
+  // VIRTUAL WORK / DISPLACEMENT RULERS
+  // ========================================
+  if (state.loadY > 0) {
+    // 1. Load Ruler (x)
+    const rulerX = massCenterX - 45;
+    drawDisplacementRuler(rulerX, Y_bot_initial + 30, rulerX, Y_bot + 30, 'x', '#00ff88');
+    
+    // 2. Effort Ruler (n * x)
+    const eStartX = ropeX[n] + 30;
+    const eStartY = Y_top_pulley + 100;
+    drawDisplacementRuler(eStartX, eStartY, eStartX, effortY_end, `${n}x`, '#00e5ff');
+  }
+}
+ 
+// ── Diagram Sub-Routines ──
+ 
+function drawTextbookPulley(x, y, r, isFixed, yCeil) {
+  ctx.strokeStyle = '#4a6080';
+  ctx.lineWidth = 4;
+  if (isFixed) {
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x, yCeil); ctx.stroke();
+  }
+  ctx.fillStyle = '#0a1628';
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.arc(x, y, r*0.3, 0, Math.PI*2); ctx.stroke();
+  ctx.fillStyle = '#00e5ff';
+  ctx.beginPath(); ctx.arc(x, y, 2, 0, Math.PI*2); ctx.fill();
+}
+ 
+function drawMassBlock(cx, yTop, lvl) {
+  const w = 44, h = 40;
+  ctx.strokeStyle = '#4a6080';
+  ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(cx, yTop-10); ctx.lineTo(cx, yTop); ctx.stroke();
+ 
+  ctx.fillStyle = '#0f1f3d';
+  ctx.strokeStyle = '#00e5ff';
+  ctx.lineWidth = 2;
+  ctx.shadowColor = 'rgba(0,229,255,0.3)';
+  ctx.shadowBlur = 10;
+  ctx.fillRect(cx - w/2, yTop, w, h);
+  ctx.strokeRect(cx - w/2, yTop, w, h);
+  ctx.shadowBlur = 0;
+ 
+  ctx.fillStyle = '#e0f0ff';
+  ctx.font = 'bold 12px "Orbitron", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(`${lvl.mass}kg`, cx, yTop + h/2);
+ 
+  // Weight Vector
+  drawVector(cx, yTop + h + 5, cx, yTop + h + 45, '#ff6b35', 'W');
+}
+ 
+function drawVector(x1, y1, x2, y2, color, label) {
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 2;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+ 
+  const angle = Math.atan2(y2 - y1, x2 - x1);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - 8 * Math.cos(angle - Math.PI/6), y2 - 8 * Math.sin(angle - Math.PI/6));
+  ctx.lineTo(x2 - 8 * Math.cos(angle + Math.PI/6), y2 - 8 * Math.sin(angle + Math.PI/6));
+  ctx.fill();
+ 
+  if (label) {
+    ctx.font = 'bold 14px "Space Mono", monospace';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(label, x2 + 8, y1 + (y2-y1)/2);
+  }
+  ctx.shadowBlur = 0;
+}
+ 
+function drawDisplacementRuler(x1, y1, x2, y2, label, color) {
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = 1;
+  ctx.setLineDash([4, 4]);
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.setLineDash([]);
+  
+  // Tick marks
+  ctx.beginPath(); ctx.moveTo(x1 - 5, y1); ctx.lineTo(x1 + 5, y1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x2 - 5, y2); ctx.lineTo(x2 + 5, y2); ctx.stroke();
+ 
+  ctx.font = 'bold 12px "Space Mono", monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(label, x1 + 15, (y1 + y2) / 2);
+}
+ 
+// ============================================================
+// LOGIC & INTERACTION
+// ============================================================
+ 
+function applyForce(){
+  if(state.isAnimating) return;
+  const lvl = LEVELS[state.currentLevel];
+  const E_input = parseFloat(document.getElementById('forceInput').value);
+ 
+  /* Responsive changes start */
+  /* On mobile, scroll canvas into view so the user can watch the animation */
+  if (window.innerWidth <= 900) {
+    const canvasArea = document.querySelector('.canvas-area');
+    if (canvasArea) {
+      canvasArea.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }
+  /* Responsive changes end */
+  
+  if(isNaN(E_input) || E_input <= 0){ 
+    alert("Please enter a valid force."); return; 
+  }
+ 
+  const W = lvl.mass * lvl.g;
+  const E_correct = W / lvl.n;
+  const isCorrect = Math.abs(E_input - E_correct) < 1.0; 
+ 
+  updateAnalysis(lvl, E_input, E_correct, isCorrect);
+ 
+  if (isCorrect) {
+    animateLift(true, lvl, E_input, E_correct);
+  } else {
+    animateLift(false, lvl, E_input, E_correct);
+  }
+}
+ 
+function animateLift(success, lvl, E_in, E_req) {
+  state.isAnimating = true;
+  document.getElementById('liftBtn').disabled = true;
+  
+  const targetY = success ? 130 : 15; 
+  const duration = success ? 2000 : 400; // Slower for success so they see the rulers
+  let t0 = null;
+ 
+  function frame(ts){
+    if(!t0) t0 = ts;
+    const prog = Math.min((ts-t0)/duration, 1);
+    const eased = success ? 1 - Math.pow(1 - prog, 3) : Math.sin(prog * Math.PI); 
+    
+    state.loadY = targetY * eased;
+    drawScene();
+ 
+    if(prog < 1){
+      state.animFrame = requestAnimationFrame(frame);
+    } else {
+      state.isAnimating = false;
+      document.getElementById('liftBtn').disabled = false;
+      if (success) showFeedback(lvl, E_in, E_req);
+    }
+  }
+  state.animFrame = requestAnimationFrame(frame);
+}
+ 
+function updateAnalysis(lvl, E_in, E_req, isCorrect) {
+  const pill = document.getElementById('resultPill');
+  const W = (lvl.mass * lvl.g).toFixed(1);
+  
+  if (isCorrect) {
+    pill.className = 'result-pill success';
+    pill.textContent = `✓ LIFT SUCCESS: Effort = ${E_in} N`;
+  } else {
+    pill.className = 'result-pill fail';
+    pill.textContent = `✗ LIFT FAILED: ${E_in} N is incorrect.`;
+  }
+ 
+  document.getElementById('calcBlock').innerHTML = `
+    <div class="calc-row"><span class="calc-eq">1. Load Weight (W)</span><span class="calc-res">${W} N</span></div>
+    <div class="calc-row"><span class="calc-eq">2. Ropes (n)</span><span class="calc-res" style="color:var(--success)">${lvl.n}</span></div>
+    <div class="calc-row"><span class="calc-eq">3. Required E = W/n</span><span class="calc-res" style="color:var(--accent)">${E_req.toFixed(1)} N</span></div>
+    <div class="calc-row" style="margin-top:8px"><span class="calc-eq">Your Applied E</span><span class="calc-res" style="color:${isCorrect?'var(--success)':'var(--danger)'}">${E_in} N</span></div>
+  `;
+}
+ 
+function showFeedback(lvl, E_in, E_req) {
+  const ov = document.getElementById('feedbackOverlay');
+  const W = (lvl.mass * lvl.g).toFixed(1);
+  
+  document.getElementById('fbTitle').textContent = 'Concept Mastered ✓';
+  document.getElementById('fbEdu').innerHTML = `
+    <strong>Step 1: Identify Forces</strong><br>
+    The load creates a downward force (Weight) of ${lvl.mass} × ${lvl.g} = <strong>${W} N</strong>.<br><br>
+    <strong>Step 2: Determine Mechanical Advantage</strong><br>
+    By tracing the diagram, we see <strong>${lvl.n} rope segment(s)</strong> pulling up on the load block. Therefore, Mechanical Advantage (MA) = ${lvl.n}.<br><br>
+    <strong>Step 3: Calculate Effort</strong><br>
+    The weight is distributed equally among the ${lvl.n} ropes. Tension (T) = ${W} / ${lvl.n} = <strong>${E_req.toFixed(1)} N</strong>. Since effort equals tension, E = ${E_req.toFixed(1)} N.<br><br>
+    <strong style="color:var(--warn)">Conservation of Energy (Look at the diagram!):</strong><br>
+    Because you used ${lvl.n} ropes, you must pull the effort rope <strong>${lvl.n} times further</strong> than the load actually moves! ($Work_{in} = Work_{out}$)
+  `;
+  ov.classList.add('visible');
+}
+ 
+function closeFeedback() {
+  document.getElementById('feedbackOverlay').classList.remove('visible');
+}
+ 
+// ============================================================
+// LEVEL MANAGEMENT
+// ============================================================
+function buildLevelButtons(){
+  const g = document.getElementById('levelGrid'); 
+  g.innerHTML = '';
+  LEVELS.forEach((lvl, i) => {
+    const b = document.createElement('button');
+    b.className = 'lvl-btn' + (i === state.currentLevel ? ' active' : '');
+    b.innerHTML = `n=${lvl.n}<br>${lvl.name}`;
+    b.onclick = () => selectLevel(i);
+    g.appendChild(b);
+  });
+}
+ 
+function selectLevel(idx){
+  if(state.animFrame) cancelAnimationFrame(state.animFrame);
+  state.isAnimating = false; 
+  state.currentLevel = idx;
+  state.loadY = 0;
+  
+  closeFeedback();
+  
+  const lvl = LEVELS[idx];
+  document.getElementById('objText').textContent = lvl.obj;
+  document.getElementById('infoMass').textContent = lvl.mass + ' kg';
+  document.getElementById('infoGrav').textContent = lvl.g + ' m/s²';
+  document.getElementById('infoPulleys').textContent = lvl.n;
+  document.getElementById('infoWeight').textContent = (lvl.mass * lvl.g).toFixed(1) + ' N';
+  
+  document.getElementById('forceInput').value = '';
+  document.getElementById('resultPill').className = 'result-pill';
+  document.getElementById('calcBlock').innerHTML = '<div class="calc-row"><span class="calc-eq">Apply force to begin analysis.</span></div>';
+  
+  buildLevelButtons();
+  idleDraw();
+}
+ 
+function resetLevel() { selectLevel(state.currentLevel); }
+function nextLevel() { if(state.currentLevel < LEVELS.length-1) selectLevel(state.currentLevel+1); }
+ 
+window.addEventListener('DOMContentLoaded', () => {
+  resizeCanvas();
+  selectLevel(0);
+ 
+  /* Responsive changes start */
+  /* Show the floating "Watch Simulation" button only when the canvas
+     scrolls out of view on mobile — so user can always jump back up */
+  if (window.innerWidth <= 900) {
+    const watchBtn = document.getElementById('watch-btn');
+    const canvasArea = document.querySelector('.canvas-area');
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        // Show button when canvas is NOT visible; hide when it IS
+        watchBtn.classList.toggle('visible', !entry.isIntersecting);
+      },
+      { threshold: 0.15 }
+    );
+    observer.observe(canvasArea);
+ 
+    // Re-evaluate if window resizes to desktop
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 900) {
+        watchBtn.classList.remove('visible');
+      }
+    });
+  }
+  /* Responsive changes end */
+});
+// FLASHCARD START
+(function(){
+  var overlay = document.getElementById('fc-overlay');
+  var startBtn = document.getElementById('fc-start-btn');
+  var reopenBtn = document.getElementById('fc-reopen-btn');
+ 
+  function fcHide(){
+    overlay.classList.add('fc-out');
+    overlay.addEventListener('animationend', function(){
+      overlay.style.display = 'none';
+    }, { once: true });
+  }
+ 
+  function fcShow(){
+    overlay.style.display = 'flex';
+    overlay.classList.remove('fc-out');
+    void overlay.offsetWidth; // force reflow so animation replays
+  }
+ 
+  startBtn.addEventListener('click', fcHide);
+  reopenBtn.addEventListener('click', fcShow);
+})();
+// FLASHCARD END
+ 
+</script>
+</body>
+</html>
